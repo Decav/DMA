@@ -1,0 +1,19 @@
+## Interface: 11200
+## Title: DMA - DKP Manager Addon
+## Author: Decavi
+## Notes: DKP Manager for Vanilla
+## SavedVariables: DMA_DB
+
+Init.lua
+Constants.lua
+Logger.lua
+Utils.lua
+Events.lua
+Permissions.lua
+EventManager.lua
+Database.lua
+Cache.lua
+MainFrame.lua
+DKPMaster.lua
+History.lua
+DMA.lua

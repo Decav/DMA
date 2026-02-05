@@ -1,0 +1,102 @@
+DMA - DKP Manager Addon for World of Warcraft Vanilla 1.12.1
+===========================================================
+
+DESCRIPCIÓN
+-----------
+DMA es un addon completo para la gestión de DKP (Dragon Kill Points) en guilds de World of Warcraft Vanilla.
+Proporciona una interfaz intuitiva para que los DKP Masters puedan gestionar puntos, ver historiales y
+sincronizar datos entre miembros de la guild.
+
+CARACTERÍSTICAS PRINCIPALES
+--------------------------
+- Gestión completa de DKP con eventos auditables
+- Interfaz gráfica intuitiva con lista de jugadores
+- Sistema de permisos para DKP Masters
+- Sincronización automática por chat de guild
+- Historial completo de transacciones
+- Datos persistentes entre sesiones
+- Sistema de logging integrado
+
+COMANDOS DISPONIBLES
+-------------------
+/dma o /dkp          - Alternar ventana principal
+/dma show           - Mostrar ventana principal
+/dma hide           - Ocultar ventana principal
+/dma reset          - Resetear posición de la ventana
+/dma history        - Mostrar/ocultar historial de eventos
+/dma stats          - Mostrar estadísticas de DKP
+/dma resetdata      - Recrear datos de prueba (solo para desarrollo)
+/dma loadguild      - Cargar miembros de la hermandad
+
+CARGA DE JUGADORES
+------------------
+El addon automáticamente intenta cargar los miembros de tu hermandad al iniciar.
+Si no se cargan automáticamente, puedes usar:
+- Comando: /dma loadguild
+- Botón "Load Guild" en la interfaz principal
+
+Si no estás en una hermandad o no hay miembros, se crearán datos de prueba automáticamente.
+
+COMPATIBILIDAD WoW VANILLA 1.12.1
+---------------------------------
+- Usa GetGuildInfo() en lugar de UnitInGuild() para compatibilidad
+- Reemplaza string.gmatch() con split manual usando string.find/string.sub
+- Reemplaza strtrim() con string.gsub() para trimming
+- Verifica disponibilidad de funciones de guild antes de usarlas
+- Maneja errores de funciones no disponibles
+- Compatible con formato de nombres de personajes con realm
+- Usa funciones básicas de Lua/string disponibles en Vanilla
+
+INSTALACIÓN
+-----------
+1. Copia la carpeta "DMA" en tu directorio Interface/AddOns/
+2. Reinicia WoW o ejecuta /reload
+3. El addon se cargará automáticamente
+
+PRIMER USO
+----------
+1. Al cargar por primera vez, se crearán datos de prueba automáticamente
+2. Usa /dma para abrir la interfaz principal
+3. Si eres DKP Master, podrás gestionar puntos de otros jugadores
+4. Los cambios se sincronizan automáticamente con la guild
+
+ARCHIVOS DEL PROYECTO
+--------------------
+DMA.toc              - Archivo de configuración del addon
+DMA.lua              - Comandos slash y configuración inicial
+Init.lua             - Inicialización central del addon
+Constants.lua        - Constantes del sistema
+Logger.lua           - Sistema de logging
+Utils.lua            - Utilidades generales
+Events.lua           - Registro de eventos de WoW
+Permissions.lua      - Gestión de permisos DKP Master
+Comm.lua             - Comunicación por chat de guild
+Database.lua         - Gestión de SavedVariables
+EventManager.lua     - Creación y validación de eventos DKP
+Cache.lua            - Cálculo de DKP actual de jugadores
+MainFrame.lua        - Interfaz principal con lista de jugadores
+DKPMaster.lua        - Panel de administración DKP
+History.lua          - Interfaz de historial de eventos
+test.lua             - Script de pruebas (ejecutar con /run)
+
+DESARROLLO
+----------
+Para desarrollo y testing:
+- Ejecuta /run con el contenido de test.lua para verificar módulos
+- Usa /dma resetdata para recrear datos de prueba
+- Revisa logs en el chat para debugging
+
+NOTAS TÉCNICAS
+-------------
+- Compatible con WoW Vanilla 1.12.1
+- Usa SavedVariables para persistencia
+- Eventos inmutables con IDs únicos
+- Sistema modular para fácil mantenimiento
+- Fallback a funciones nativas si módulos fallan
+
+SOPORTE
+-------
+Para reportar bugs o solicitar features, contacta al desarrollador.
+9. Manejo de Errores: Implementa un manejo de errores robusto para mejorar la estabilidad del addon.
+10. Actualizaciones: Mantente al día con las actualizaciones de la API de WoW
+    para asegurar la compatibilidad continua del addon.
