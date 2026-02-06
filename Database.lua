@@ -94,6 +94,11 @@ end
 
 function DMA.Data.Database:AddEvent(event)
     local eventId = GenerateEventId(event)
+    -- Evitar duplicar eventos si ya existen (por ejemplo, eventos replicados por red)
+    if DMA_DB.events[eventId] then
+        return eventId
+    end
+
     event.id = eventId
 
     DMA_DB.events[eventId] = event
@@ -135,15 +140,9 @@ function DMA.Data.Database:AddEvent(event)
 end
 
 function DMA.Data.Database:ReplicateEvent(event)
-    local eventId = GenerateEventId(event)
-
-    if DMA_DB.events[eventId] then
-        return
-    end
-
-    event.id = eventId
-    DMA_DB.events[eventId] = event
-    self:ApplyEvent(event)
+    -- Para compatibilidad, simplemente reutilizamos AddEvent,
+    -- que ya es idempotente e incluye el historial textual.
+    self:AddEvent(event)
 end
 
 function DMA.Data.Database:GetDKP(playerName)

@@ -65,18 +65,29 @@ function DMA.Core.Comm:HandleDKPEvent(parts, sender)
     local reason    = parts[5]
     local master    = parts[6]
     local timestamp = tonumber(parts[7])
-
-    if not DMA.Core.Permissions:IsDKPMaster(master) then
+    -- Ignorar nuestro propio mensaje de red (ya aplicamos localmente)
+    if sender and UnitName and sender == UnitName("player") then
         return
     end
 
-    DMA.Data.Database:ReplicateEvent({
+    -- Construir un evento completo para almacenarlo e incluirlo en el historial
+    local eventType = "manual_adjust"
+    if DMA and DMA.Utils and DMA.Utils.Constants and DMA.Utils.Constants.EVENT_TYPES then
+        eventType = DMA.Utils.Constants.EVENT_TYPES.MANUAL_ADJUST or "manual_adjust"
+    end
+
+    local event = {
+        type    = eventType,
         players = players,
         value   = value,
         reason  = reason,
         master  = master,
         time    = timestamp
-    })
+    }
+
+    if DMA.Data and DMA.Data.Database then
+        DMA.Data.Database:AddEvent(event)
+    end
 end
 
 function DMA.Core.Comm:HandlePermissionAdd(parts, sender)
