@@ -49,6 +49,7 @@ function MainFrame:Init()
 
     self:CreateTitle()
     self:CreateCloseButton()
+    self:CreateHistoryButton()
     self:CreatePlayerList()
     self:CreateDKPMasterPanel()
 end
@@ -77,6 +78,35 @@ function MainFrame:CreateCloseButton()
     button:SetScript("OnLeave", function() button:SetBackdropColor(0.2,0.2,0.2,1) end)
     button:SetScript("OnClick", function() self.frame:Hide() end)
     self.closeButton = button
+end
+
+-- Botón para abrir el historial, accesible siempre
+function MainFrame:CreateHistoryButton()
+    if not self.frame then return end
+
+    local bgr = {0.2,0.2,0.2,1}
+    local bdr = {0.2,0.2,0.2,1}
+    local button = CreateFrame("Button", nil, self.frame)
+    button:SetWidth(70)
+    button:SetHeight(20)
+    button:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -30, -5)
+    button:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+    button:SetBackdropColor(bgr[1], bgr[2], bgr[3], bgr[4] or 1)
+    button:SetBackdropBorderColor(bdr[1], bdr[2], bdr[3], bdr[4] or 1)
+    button.text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    button.text:SetPoint("CENTER", button, "CENTER", 0, 0)
+    button.text:SetText("History")
+    button:SetScript("OnEnter", function() button:SetBackdropColor(0.5,0.5,0.5,1) end)
+    button:SetScript("OnLeave", function() button:SetBackdropColor(0.2,0.2,0.2,1) end)
+    button:SetScript("OnClick", function()
+        if DMA.UI and DMA.UI.History and DMA.UI.History.ShowAttached then
+            DMA.UI.History:ShowAttached(self.frame)
+        elseif DMA.UI and DMA.UI.History then
+            DMA.UI.History:Toggle()
+        end
+    end)
+
+    self.historyButton = button
 end
 
 -- Create player list with DKP values

@@ -22,11 +22,8 @@ function History:Init()
     frame:SetWidth(FRAME_WIDTH)
     frame:SetHeight(FRAME_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", function() frame:StartMoving() end)
-    frame:SetScript("OnDragStop", function() frame:StopMovingOrSizing() end)
+    frame:SetMovable(false)
+    frame:EnableMouse(false)
     frame:Hide()
 
     frame:SetBackdrop({
@@ -167,6 +164,21 @@ end
 function History:Show()
     if not self.frame then
         self:Init()
+    end
+
+    self:Refresh()
+    self.frame:Show()
+end
+
+-- Mostrar el historial anclado a la derecha de otra ventana (por ejemplo, el mainframe)
+function History:ShowAttached(parentFrame)
+    if not self.frame then
+        self:Init()
+    end
+
+    if parentFrame then
+        self.frame:ClearAllPoints()
+        self.frame:SetPoint("TOPLEFT", parentFrame, "TOPRIGHT", 10, 0)
     end
 
     self:Refresh()

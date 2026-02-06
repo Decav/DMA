@@ -25,30 +25,33 @@ function DMA.Core.Comm:OnGuildMessage(message, sender)
         return
     end
 
-    -- Usamos "^" como delimitador interno para evitar problemas con el
-    -- carácter "|" en mensajes de chat (que WoW usa para códigos de color/enlaces).
-    local parts = {}
+    -- Detectar y usar el delimitador correcto.
+    -- Formatos soportados:
+    --   "DMA^DKP_EVENT^..." (nuevo)
+    --   "DMA|DKP_EVENT|..." (compatibilidad hacia atrás)
     local delimiter = "^"
-    if DMA.Utils and DMA.Utils.Split then
-        parts = DMA.Utils:Split(message, delimiter)
-    else
-        -- Fallback: manual string splitting for WoW Vanilla compatibility
-        local start = 1
-        while true do
-            local pos = string.find(message, delimiter, start, true)
-            if pos then
-                local part = string.sub(message, start, pos - 1)
-                if part ~= "" then
-                    table.insert(parts, part)
-                end
-                start = pos + 1
-            else
-                local part = string.sub(message, start)
-                if part ~= "" then
-                    table.insert(parts, part)
-                end
-                break
+    if string.find(message, "^DKP_EVENT^", 1, true) then
+        delimiter = "^"
+    elseif string.find(message, "|DKP_EVENT|", 1, true) then
+        delimiter = "|"
+    end
+
+    local parts = {}
+    local start = 1
+    while true do
+        local pos = string.find(message, delimiter, start, true)
+        if pos then
+            local part = string.sub(message, start, pos - 1)
+            if part ~= "" then
+                table.insert(parts, part)
             end
+            start = pos + 1
+        else
+            local part = string.sub(message, start)
+            if part ~= "" then
+                table.insert(parts, part)
+            end
+            break
         end
     end
 
