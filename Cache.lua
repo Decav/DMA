@@ -357,6 +357,49 @@ function Cache:DelayedLoadGuildMembers()
     end
 end
 
+-- Sincroniza el cache interno (DMA_DB.cache) con la nota pública
+-- para una lista concreta de jugadores. Esto asegura que, antes de
+-- aplicar un evento de ajuste de DKP, partimos del valor real que
+-- hay en la hermandad y no de datos antiguos de pruebas/eventos.
+function Cache:SyncPlayersFromPublicNote(playerList)
+    if not playerList or table.getn(playerList) == 0 then
+        return
+    end
+
+    if not GetNumGuildMembers or not GetGuildRosterInfo then
+        return
+    end
+
+    -- Crear un set con los nombres que queremos sincronizar
+    local wanted = {}
+    for _, name in ipairs(playerList) do
+        if name and name ~= "" then
+            wanted[name] = true
+        end
+    end
+
+    if next(wanted) == nil then
+        return
+    end
+
+    -- Actualizar roster y leer notas públicas solo de esos jugadores
+    GuildRoster()
+    local numMembers = GetNumGuildMembers()
+    for i = 1, numMembers do
+        local name, _, _, _, _, _, note = GetGuildRosterInfo(i)
+        if name then
+            name = string.gsub(name, "-.*", "")
+            if wanted[name] then
+                local dkp = 0
+                if note and note ~= "" then
+                    dkp = tonumber(note) or 0
+                end
+                DMA_DB.cache[name] = dkp
+            end
+        end
+    end
+end
+
 -- Actualiza la nota pública de un jugador con el nuevo DKP (requiere que SetGuildMemberPublicNote exista)
 function Cache.UpdatePlayerPublicNote(playerName, newDKP)
     DEFAULT_CHAT_FRAME:AddMessage("[DEBUG] Entrando a UpdatePlayerPublicNote para " .. (playerName or "nil") .. ", DKP: " .. tostring(newDKP))

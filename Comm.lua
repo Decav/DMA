@@ -25,13 +25,15 @@ function DMA.Core.Comm:OnGuildMessage(message, sender)
         return
     end
 
+    -- Usamos "^" como delimitador interno para evitar problemas con el
+    -- carácter "|" en mensajes de chat (que WoW usa para códigos de color/enlaces).
     local parts = {}
+    local delimiter = "^"
     if DMA.Utils and DMA.Utils.Split then
-        parts = DMA.Utils:Split(message, "|")
+        parts = DMA.Utils:Split(message, delimiter)
     else
         -- Fallback: manual string splitting for WoW Vanilla compatibility
         local start = 1
-        local delimiter = "|"
         while true do
             local pos = string.find(message, delimiter, start, true)
             if pos then
@@ -85,6 +87,35 @@ function DMA.Core.Comm:HandleDKPEvent(parts, sender)
         time    = timestamp
     }
 
+    -- Antes de aplicar el evento, sincronizar el cache con la nota pública
+    -- de los jugadores afectados para que el delta se aplique sobre el valor real.
+    if DMA.Data and DMA.Data.Cache and DMA.Data.Cache.SyncPlayersFromPublicNote and players and players ~= "" then
+        local playerList = {}
+        local startIndex = 1
+        local delimiter = ","
+        while true do
+            local pos = string.find(players, delimiter, startIndex, true)
+            local name
+            if pos then
+                name = string.sub(players, startIndex, pos - 1)
+                startIndex = pos + 1
+            else
+                name = string.sub(players, startIndex)
+            end
+
+            name = string.gsub(name or "", "^%s*(.-)%s*$", "%1")
+            if name ~= "" then
+                table.insert(playerList, name)
+            end
+
+            if not pos then break end
+        end
+
+        if table.getn(playerList) > 0 then
+            DMA.Data.Cache:SyncPlayersFromPublicNote(playerList)
+        end
+    end
+
     if DMA.Data and DMA.Data.Database then
         DMA.Data.Database:AddEvent(event)
     end
@@ -102,8 +133,11 @@ function DMA.Core.Comm:BroadcastDKPEvent(players, value, reason)
     local master    = UnitName("player")
     local timestamp = time()
 
+    -- Formato interno: DMA^DKP_EVENT^players^value^reason^master^timestamp
+    -- Evitamos el carácter "|" para que el mensaje no genere errores
+    -- de "invalid escape code in chat message".
     local msg = string.format(
-        "DMA|DKP_EVENT|%s|%d|%s|%s|%d",
+        "DMA^DKP_EVENT^%s^%d^%s^%s^%d",
         players,
         value,
         reason,

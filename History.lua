@@ -305,7 +305,8 @@ function History:CreateEntry(event, yOffset)
     entry:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, yOffset)
 
     -- Timestamp
-    local timeStr = date("%m/%d %H:%M", event.time)
+    local timeValue = event.time or time()
+    local timeStr = date("%m/%d %H:%M", timeValue)
     entry.timeText = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     entry.timeText:SetPoint("LEFT", entry, "LEFT", 0, 0)
     entry.timeText:SetWidth(80)
@@ -315,10 +316,10 @@ function History:CreateEntry(event, yOffset)
     entry.masterText = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     entry.masterText:SetPoint("LEFT", entry.timeText, "RIGHT", 10, 0)
     entry.masterText:SetWidth(80)
-    entry.masterText:SetText(event.master)
+    entry.masterText:SetText(event.master or "?")
 
     -- Players
-    local playersText = event.players
+    local playersText = event.players or ""
     if strlen(playersText) > 20 then
         playersText = strsub(playersText, 1, 17) .. "..."
     end
@@ -328,11 +329,12 @@ function History:CreateEntry(event, yOffset)
     entry.playersText:SetText(playersText)
 
     -- Value
-    local valueColor = event.value >= 0 and "|cff00ff00" or "|cffff0000"
+    local value = tonumber(event.value) or 0
+    local valueColor = value >= 0 and "|cff00ff00" or "|cffff0000"
     entry.valueText = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     entry.valueText:SetPoint("LEFT", entry.playersText, "RIGHT", 10, 0)
     entry.valueText:SetWidth(60)
-    entry.valueText:SetText(valueColor .. event.value)
+    entry.valueText:SetText(valueColor .. value)
 
     -- Reason
     local reasonText = event.reason or ""

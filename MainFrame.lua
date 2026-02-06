@@ -719,6 +719,11 @@ function MainFrame:AdjustDKP(valueStr, reason, isAward)
         playerStr = playerStr .. v
     end
 
+    -- Sincronizar el cache con la nota pública actual de estos jugadores
+    if DMA.Data and DMA.Data.Cache and DMA.Data.Cache.SyncPlayersFromPublicNote then
+        DMA.Data.Cache:SyncPlayersFromPublicNote(selectedPlayers)
+    end
+
     if DMA.Data and DMA.Data.EventManager then
         local event = DMA.Data.EventManager:CreateEvent(
             "manual_adjust",
