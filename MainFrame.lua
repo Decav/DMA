@@ -185,6 +185,9 @@ function MainFrame:CreateDKPMasterPanel()
     panelFrame:SetBackdropColor(0.04, 0.04, 0.04, 0.95)
     panelFrame:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
 
+    -- Store reference to this panel so we can rebuild/replace it later
+    self.dkpPanelFrame = panelFrame
+
     -- Title
     local title = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOP", panelFrame, "TOP", 0, -6)
@@ -347,8 +350,7 @@ function MainFrame:CreateDKPMasterPanel()
     decayBtn:SetScript("OnLeave", function() decayBtn:SetBackdropColor(0.2,0.2,0.2,1) end)
     decayBtn:SetScript("OnClick", function() MainFrame:ShowDecayConfirmDialog() end)
 
-    -- Store references
-    self.dkpPanelFrame = panelFrame
+    -- Store references for later use when awarding/deducting DKP
     self.valueBox = valueBox
     self.reasonBox = reasonBox
 end
