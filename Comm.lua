@@ -133,22 +133,10 @@ function DMA.Core.Comm:HandlePermissionAdd(parts, sender)
 end
 
 function DMA.Core.Comm:BroadcastDKPEvent(players, value, reason)
-    local master    = UnitName("player")
-    local timestamp = time()
-
-    -- Formato interno: DMA^DKP_EVENT^players^value^reason^master^timestamp
-    -- Evitamos el carácter "|" para que el mensaje no genere errores
-    -- de "invalid escape code in chat message".
-    local msg = string.format(
-        "DMA^DKP_EVENT^%s^%d^%s^%s^%d",
-        players,
-        value,
-        reason,
-        master,
-        timestamp
-    )
-
-    self:Send(msg)
+    -- Temporalmente desactivado para evitar que aparezca el mensaje
+    -- en formato de "código" en el chat de hermandad durante las raids.
+    -- La lógica de replicación de eventos se reactivará más adelante.
+    return
 end
 
 DEFAULT_CHAT_FRAME:AddMessage("DMA: Comm module loaded")
