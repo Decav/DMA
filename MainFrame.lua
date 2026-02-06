@@ -191,12 +191,18 @@ function MainFrame:CreateDKPMasterPanel()
     title:SetText("DKP Master Panel")
 
     -- Check if current player is DKP Master
-    local isMaster = DMA.Core and DMA.Core.Permissions and DMA.Core.Permissions:IsDKPMaster(UnitName("player"))
+    local canEdit = (CanEditPublicNote and CanEditPublicNote()) or 0
+    local isMaster = (canEdit == 1)
 
     if not isMaster then
         local noAccessText = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         noAccessText:SetPoint("CENTER", panelFrame, "CENTER", 0, 0)
-        noAccessText:SetText("You are not a DKP Master")
+        if canEdit == 0 then
+            noAccessText:SetText("You are not a DKP Master")
+        else
+            -- Información de guild aún no disponible (canEdit nil)
+            noAccessText:SetText("Guild info not ready. Please open again in a few seconds or /reload.")
+        end
         return
     end
 
@@ -295,7 +301,7 @@ function MainFrame:CreateDKPMasterPanel()
 
     -- Action buttons
     local awardBtn = CreateFrame("Button", nil, panelFrame)
-    awardBtn:SetWidth(120)
+    awardBtn:SetWidth(133)
     awardBtn:SetHeight(25)
     awardBtn:SetPoint("TOPLEFT", reasonBox, "BOTTOMLEFT", 0, -20)
     awardBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
@@ -309,7 +315,7 @@ function MainFrame:CreateDKPMasterPanel()
     awardBtn:SetScript("OnClick", function() self:AdjustDKP(valueBox:GetText(), reasonBox:GetText(), true) end)
 
     local deductBtn = CreateFrame("Button", nil, panelFrame)
-    deductBtn:SetWidth(120)
+    deductBtn:SetWidth(133)
     deductBtn:SetHeight(25)
     deductBtn:SetPoint("LEFT", awardBtn, "RIGHT", 10, 0)
     deductBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
@@ -322,10 +328,149 @@ function MainFrame:CreateDKPMasterPanel()
     deductBtn:SetScript("OnLeave", function() deductBtn:SetBackdropColor(0.2,0.2,0.2,1) end)
     deductBtn:SetScript("OnClick", function() self:AdjustDKP(valueBox:GetText(), reasonBox:GetText(), false) end)
 
+    -- DKP Decay section
+    local decayLabel = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    decayLabel:SetPoint("TOPLEFT", awardBtn, "BOTTOMLEFT", 0, -20)
+    decayLabel:SetText("DKP Decay (25%)")
+
+    local decayBtn = CreateFrame("Button", nil, panelFrame)
+    decayBtn:SetWidth(276)
+    decayBtn:SetHeight(24)
+    decayBtn:SetPoint("TOPLEFT", decayLabel, "BOTTOMLEFT", 0, -6)
+    decayBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+    decayBtn:SetBackdropColor(bgr[1], bgr[2], bgr[3], bgr[4] or 1)
+    decayBtn:SetBackdropBorderColor(bdr[1], bdr[2], bdr[3], bdr[4] or 1)
+    decayBtn.text = decayBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    decayBtn.text:SetPoint("CENTER", decayBtn, "CENTER", 0, 0)
+    decayBtn.text:SetText("Apply 25% DKP Decay (>= 1 DKP)")
+    decayBtn:SetScript("OnEnter", function() decayBtn:SetBackdropColor(0.5,0.5,0.5,1) end)
+    decayBtn:SetScript("OnLeave", function() decayBtn:SetBackdropColor(0.2,0.2,0.2,1) end)
+    decayBtn:SetScript("OnClick", function() MainFrame:ShowDecayConfirmDialog() end)
+
     -- Store references
     self.dkpPanelFrame = panelFrame
     self.valueBox = valueBox
     self.reasonBox = reasonBox
+end
+
+-- Confirm dialog for DKP Decay
+function MainFrame:ShowDecayConfirmDialog()
+    if not DMA or not DMA.Core or not DMA.Core.DKPDecay then
+        DEFAULT_CHAT_FRAME:AddMessage("DMA: DKP Decay module not available")
+        return
+    end
+
+    if not self.decayConfirmFrame then
+        local frame = CreateFrame("Frame", "DMA_DKPDecayConfirm", UIParent)
+        frame:SetFrameStrata("DIALOG")
+        frame:SetWidth(380)
+        frame:SetHeight(160)
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        frame:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            tile = false,
+            edgeSize = 1,
+            insets = { left = 1, right = 1, top = 1, bottom = 1 }
+        })
+        frame:SetBackdropColor(0.04, 0.04, 0.04, 0.95)
+        frame:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        frame:EnableMouse(true)
+        frame:SetMovable(true)
+        frame:RegisterForDrag("LeftButton")
+        frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
+        frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+
+        -- Title
+        local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        title:SetPoint("TOP", frame, "TOP", 0, -8)
+        title:SetText("Confirm DKP Decay")
+
+        -- Description (se actualizará dinámicamente con el preview)
+        local desc = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        desc:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -30)
+        desc:SetWidth(356)
+        desc:SetJustifyH("LEFT")
+        desc:SetJustifyV("TOP")
+        desc:SetText("")
+
+        -- Confirm button
+        local confirmBtn = CreateFrame("Button", nil, frame)
+        confirmBtn:SetWidth(120)
+        confirmBtn:SetHeight(24)
+        confirmBtn:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 20, 15)
+        confirmBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+        confirmBtn:SetBackdropColor(0.2, 0.6, 0.2, 1)
+        confirmBtn:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        confirmBtn.text = confirmBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        confirmBtn.text:SetPoint("CENTER", confirmBtn, "CENTER", 0, 0)
+        confirmBtn.text:SetText("Apply Decay")
+        confirmBtn:SetScript("OnEnter", function() confirmBtn:SetBackdropColor(0.3,0.8,0.3,1) end)
+        confirmBtn:SetScript("OnLeave", function() confirmBtn:SetBackdropColor(0.2,0.6,0.2,1) end)
+        confirmBtn:SetScript("OnClick", function()
+            DMA.Core.DKPDecay:ApplyDecay()
+            frame:Hide()
+        end)
+
+        -- Cancel button
+        local cancelBtn = CreateFrame("Button", nil, frame)
+        cancelBtn:SetWidth(120)
+        cancelBtn:SetHeight(24)
+        cancelBtn:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 15)
+        cancelBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+        cancelBtn:SetBackdropColor(0.3, 0.3, 0.3, 1)
+        cancelBtn:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        cancelBtn.text = cancelBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        cancelBtn.text:SetPoint("CENTER", cancelBtn, "CENTER", 0, 0)
+        cancelBtn.text:SetText("Cancel")
+        cancelBtn:SetScript("OnEnter", function() cancelBtn:SetBackdropColor(0.5,0.5,0.5,1) end)
+        cancelBtn:SetScript("OnLeave", function() cancelBtn:SetBackdropColor(0.3,0.3,0.3,1) end)
+        cancelBtn:SetScript("OnClick", function()
+            frame:Hide()
+        end)
+
+        -- Allow closing with ESC
+        if UISpecialFrames then
+            table.insert(UISpecialFrames, "DMA_DKPDecayConfirm")
+        end
+
+        -- Guardar referencias para actualizar texto y estado del botón
+        frame.desc = desc
+        frame.confirmBtn = confirmBtn
+
+        self.decayConfirmFrame = frame
+    end
+
+    -- Actualizar preview de a quiénes afectará el decay
+    local frame = self.decayConfirmFrame
+    if DMA.Core and DMA.Core.DKPDecay and frame and frame.desc and frame.confirmBtn then
+        local targets = DMA.Core.DKPDecay:GetDecayTargets() or {}
+        local count = table.getn(targets)
+
+        if count == 0 then
+            frame.desc:SetText("No players with DKP >= 1 were found. Nothing to decay.")
+            frame.confirmBtn:Disable()
+        else
+            frame.confirmBtn:Enable()
+
+            local maxList = math.min(count, 10)
+            local lines = {}
+            table.insert(lines, "This will apply a 25% DKP decay (rounded up) to " .. count .. " guild members with 1 DKP or more.")
+            table.insert(lines, "")
+            table.insert(lines, "Examples:")
+            for i = 1, maxList do
+                local t = targets[i]
+                table.insert(lines, string.format("- %s: %d -> %d", t.name or "?", t.oldDKP or 0, t.newDKP or 0))
+            end
+            if count > maxList then
+                table.insert(lines, string.format("... and %d more.", count - maxList))
+            end
+
+            frame.desc:SetText(table.concat(lines, "\n"))
+        end
+    end
+
+    frame:Show()
 end
 
 -- Get current player list (RAID if in raid, otherwise guild)

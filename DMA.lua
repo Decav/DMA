@@ -66,6 +66,16 @@ SlashCmdList["DMA"] = function(msg)
                         stats.totalPlayers, stats.totalDKP, stats.averageDKP))
                 end
             end
+        elseif command == "decay" then
+            if DMA.Core and DMA.Core.DKPDecay then
+                DMA.Core.DKPDecay:ApplyDecay()
+            else
+                if Logger then
+                    Logger:Warn("DKP Decay module not available")
+                else
+                    DEFAULT_CHAT_FRAME:AddMessage("DMA: DKP Decay module not available")
+                end
+            end
         elseif command == "resetdata" then
             if DMA.Data and DMA.Data.Cache then
                 DMA.Data.Cache:Clear()

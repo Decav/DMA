@@ -195,7 +195,9 @@ end
 function Cache:GetStatistics()
     local players = self:GetAllPlayersByDKP()
 
-    if players == 0 then
+    local count = table.getn(players)
+
+    if count == 0 then
         return {
             totalPlayers = 0,
             totalDKP = 0,
@@ -208,11 +210,11 @@ function Cache:GetStatistics()
     local totalDKP = self:GetTotalDKP()
 
     return {
-        totalPlayers = players,
+        totalPlayers = count,
         totalDKP = totalDKP,
-        averageDKP = totalDKP / players,
-        highestDKP = players[1].dkp,
-        lowestDKP = players[players].dkp
+        averageDKP = totalDKP / count,
+        highestDKP = players[1] and players[1].dkp or 0,
+        lowestDKP = players[count] and players[count].dkp or 0
     }
 end
 
