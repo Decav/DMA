@@ -353,6 +353,24 @@ function MainFrame:CreateDKPMasterPanel()
     self.reasonBox = reasonBox
 end
 
+-- Rebuild DKP Master panel so that permission changes (CanEditPublicNote)
+-- are reflected every time the main window is opened
+function MainFrame:RefreshDKPMasterPanel()
+    -- Hide and detach previous panel (if any)
+    if self.dkpPanelFrame then
+        self.dkpPanelFrame:Hide()
+        self.dkpPanelFrame:SetParent(nil)
+        self.dkpPanelFrame = nil
+    end
+
+    -- Clear references to old inputs
+    self.valueBox = nil
+    self.reasonBox = nil
+
+    -- Create a fresh panel based on current permissions
+    self:CreateDKPMasterPanel()
+end
+
 -- Confirm dialog for DKP Decay
 function MainFrame:ShowDecayConfirmDialog()
     if not DMA or not DMA.Core or not DMA.Core.DKPDecay then
@@ -770,8 +788,13 @@ function MainFrame:Toggle()
     if self.frame:IsShown() then
         self.frame:Hide()
     else
+        -- Re-evaluate DKP Master permissions and refresh guild data
+        if self.RefreshDKPMasterPanel then
+            self:RefreshDKPMasterPanel()
+        end
+
+        self:RefreshPlayerList() -- Refresh guild members and DKP when showing
         self.frame:Show()
-        self:RefreshPlayerList() -- Refresh when showing
     end
 end
 
