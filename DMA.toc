@@ -9,6 +9,7 @@ Init.lua
 Constants.lua
 Logger.lua
 Utils.lua
+Comm.lua
 Events.lua
 Permissions.lua
 EventManager.lua
