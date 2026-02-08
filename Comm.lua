@@ -10,31 +10,33 @@ DMA.Core.Comm.PREFIX = "DMA"
 
 function DMA.Core.Comm:Register()
     local frame = CreateFrame("Frame")
-    frame:RegisterEvent("CHAT_MSG_GUILD")
-    frame:SetScript("OnEvent", function(_, _, message, sender)
-        DMA.Core.Comm:OnGuildMessage(message, sender)
+    -- Registrar recepción de mensajes de addon (estilo PallyPower)
+    if RegisterAddonMessagePrefix then
+        RegisterAddonMessagePrefix(self.PREFIX)
+    end
+
+    frame:RegisterEvent("CHAT_MSG_ADDON")
+    frame:SetScript("OnEvent", function(_, event, prefix, message, channel, sender)
+        if event == "CHAT_MSG_ADDON" and prefix == DMA.Core.Comm.PREFIX then
+            DMA.Core.Comm:OnAddonMessage(message, sender)
+        end
     end)
 end
 
 function DMA.Core.Comm:Send(message)
-    SendChatMessage(message, "GUILD")
+    -- Enviar mensaje de addon por canal de hermandad. Esto es invisible en el chat.
+    if SendAddonMessage then
+        SendAddonMessage(self.PREFIX, message, "GUILD")
+    end
 end
 
-function DMA.Core.Comm:OnGuildMessage(message, sender)
-    if not message or string.sub(message, 1, 3) ~= self.PREFIX then
+function DMA.Core.Comm:OnAddonMessage(message, sender)
+    if not message or message == "" then
         return
     end
 
-    -- Detectar y usar el delimitador correcto.
-    -- Formatos soportados:
-    --   "DMA^DKP_EVENT^..." (nuevo)
-    --   "DMA|DKP_EVENT|..." (compatibilidad hacia atrás)
+    -- Formato interno: DKP_EVENT^players^value^reason^master^timestamp
     local delimiter = "^"
-    if string.find(message, "^DKP_EVENT^", 1, true) then
-        delimiter = "^"
-    elseif string.find(message, "|DKP_EVENT|", 1, true) then
-        delimiter = "|"
-    end
 
     local parts = {}
     local start = 1
@@ -55,7 +57,7 @@ function DMA.Core.Comm:OnGuildMessage(message, sender)
         end
     end
 
-    local msgType = parts[2]
+    local msgType = parts[1]
 
     if msgType == "DKP_EVENT" then
         self:HandleDKPEvent(parts, sender)
@@ -65,11 +67,12 @@ function DMA.Core.Comm:OnGuildMessage(message, sender)
 end
 
 function DMA.Core.Comm:HandleDKPEvent(parts, sender)
-    local players   = parts[3]
-    local value     = tonumber(parts[4])
-    local reason    = parts[5]
-    local master    = parts[6]
-    local timestamp = tonumber(parts[7])
+    -- parts: { "DKP_EVENT", players, value, reason, master, timestamp }
+    local players   = parts[2]
+    local value     = tonumber(parts[3])
+    local reason    = parts[4]
+    local master    = parts[5]
+    local timestamp = tonumber(parts[6])
     -- Ignorar nuestro propio mensaje de red (ya aplicamos localmente)
     if sender and UnitName and sender == UnitName("player") then
         return
@@ -133,10 +136,20 @@ function DMA.Core.Comm:HandlePermissionAdd(parts, sender)
 end
 
 function DMA.Core.Comm:BroadcastDKPEvent(players, value, reason)
-    -- Temporalmente desactivado para evitar que aparezca el mensaje
-    -- en formato de "código" en el chat de hermandad durante las raids.
-    -- La lógica de replicación de eventos se reactivará más adelante.
-    return
+    local master    = UnitName("player")
+    local timestamp = time()
+
+    -- Formato interno solo para payload: DKP_EVENT^players^value^reason^master^timestamp
+    local payload = string.format(
+        "DKP_EVENT^%s^%d^%s^%s^%d",
+        players or "",
+        value or 0,
+        reason or "",
+        master or "?",
+        timestamp or time()
+    )
+
+    self:Send(payload)
 end
 
 DEFAULT_CHAT_FRAME:AddMessage("DMA: Comm module loaded")

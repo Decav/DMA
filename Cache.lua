@@ -143,6 +143,7 @@ function Cache:GetAllPlayersByDKP()
         if name then
             name = string.gsub(name, "-.*", "")
             local dkp = 0
+            -- Si la nota pública no es numérica, se considera como 0 DKP
             if note and note ~= "" then
                 dkp = tonumber(note) or 0
             end
