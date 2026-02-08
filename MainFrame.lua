@@ -426,11 +426,8 @@ function MainFrame:ShowDecayConfirmDialog()
         })
         frame:SetBackdropColor(0.04, 0.04, 0.04, 0.95)
         frame:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
-        frame:EnableMouse(true)
-        frame:SetMovable(true)
-        frame:RegisterForDrag("LeftButton")
-        frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
-        frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+        frame:EnableMouse(false)
+        frame:SetMovable(false)
 
         -- Title
         local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")

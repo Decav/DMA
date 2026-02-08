@@ -136,14 +136,27 @@ function DKPDecay:ApplyDecay()
 	end
 
 	if decayedCount > 0 then
-		Print("DKP Decay del 25% aplicado a " .. decayedCount .. " jugadores (DKP >= 1).")
+		
 		-- Aviso general por hermandad (sin detallar jugadores)
 		if SendChatMessage and IsInGuild and IsInGuild() then
 			SendChatMessage("Se ha aplicado el DKP Decay mensual del 25% a los miembros de la hermandad.", "GUILD")
 		end
-		-- Refrescar ventana principal si está abierta
+		-- Forzar actualización del roster y refrescar la lista tras un pequeño delay
+		if GuildRoster then GuildRoster() end
 		if DMA.UI and DMA.UI.MainFrame then
-			DMA.UI.MainFrame:RefreshPlayerList()
+			local mf = DMA.UI.MainFrame
+			if mf.frame and GetTime then
+				local start = GetTime()
+				local function onUpdate()
+					if GetTime() - start >= 0.5 then
+						mf.frame:SetScript("OnUpdate", nil)
+						mf:RefreshPlayerList()
+					end
+				end
+				mf.frame:SetScript("OnUpdate", onUpdate)
+			else
+				mf:RefreshPlayerList()
+			end
 		end
 	else
 		Print("No se aplicó DKP Decay; ningún jugador con DKP >= 1 tuvo cambios.")

@@ -2,6 +2,8 @@
 -- Main entry point - Slash commands and final setup
 
 -- Verify DMA is initialized
+local DEFAULT_CHAT_FRAME = DEFAULT_CHAT_FRAME
+
 if not DMA then
     DEFAULT_CHAT_FRAME:AddMessage("DMA: Error - DMA not initialized")
     return
@@ -95,10 +97,8 @@ SlashCmdList["DMA"] = function(msg)
                 if Logger then Logger:Info("Guild members loaded") end
             end
         else
-            if Logger then
-                Logger:Info("Commands: /dma (toggle), /dma show, /dma hide, /dma reset, /dma history, /dma stats, /dma resetdata, /dma loadguild")
-            else
-                DEFAULT_CHAT_FRAME:AddMessage("DMA: Commands: /dma (toggle), /dma show, /dma hide, /dma reset, /dma history, /dma stats, /dma resetdata, /dma loadguild")
+            if DEFAULT_CHAT_FRAME then
+                DEFAULT_CHAT_FRAME:AddMessage("Commands: /dma (toggle), /dma show, /dma hide, /dma reset.")
             end
         end
     end
