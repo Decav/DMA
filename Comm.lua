@@ -42,8 +42,19 @@ function DMA.Core.Comm:Send(message, channel)
         return
     end
 
-    channel = channel or "GUILD"
-    SendAddonMessage(self.PREFIX, message, channel)
+    -- En 1.12 el patrón típico (como en PallyPowerTW) es:
+    --   SendAddonMessage(prefix, message, "PARTY"/"RAID", UnitName("player"))
+    -- No existe canal "GUILD" para mensajes de addon, así que copiamos ese esquema.
+    if not channel then
+        if GetNumRaidMembers and GetNumRaidMembers() > 0 then
+            channel = "RAID"
+        else
+            channel = "PARTY"
+        end
+    end
+
+    local playerName = UnitName and UnitName("player") or nil
+    SendAddonMessage(self.PREFIX, message, channel, playerName)
 end
 
 function DMA.Core.Comm:OnAddonMessage(message, sender)
@@ -233,17 +244,11 @@ function DMA.Core.Comm:BroadcastDKPEvent(players, value, reason)
         timestamp or time()
     )
 
-    -- Enviar por GUILD para sincronizar a todos los miembros con DMA.
-    self:Send(payload, "GUILD")
+    -- Enviar siguiendo el mismo patrón que PallyPowerTW: PARTY si no hay raid,
+    -- RAID si estamos en raid. La función Send decide el canal apropiado.
+    self:Send(payload)
 
-    -- Si estamos en raid, también enviar por RAID (algunos servidores pueden
-    -- filtrar distinto los mensajes de addon por canal). AddEvent es idempotente,
-    -- así que los clientes ignorarán duplicados.
-    if IsInRaid and IsInRaid() then
-        self:Send(payload, "RAID")
-    end
-
-    DEFAULT_CHAT_FRAME:AddMessage("DMA: Enviado DKP_EVENT a la red de addons")
+    DEFAULT_CHAT_FRAME:AddMessage("DMA: Enviado DKP_EVENT a la red de addons (" .. (players or "?") .. ")")
 end
 
 DEFAULT_CHAT_FRAME:AddMessage("DMA: Comm module loaded")
