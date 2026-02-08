@@ -21,13 +21,18 @@ function DMA.Core.Comm:Register()
             DMA.Core.Comm:OnAddonMessage(message, sender)
         end
     end)
+
+    DEFAULT_CHAT_FRAME:AddMessage("DMA: Comm listening for addon messages (prefix '" .. tostring(self.PREFIX) .. "')")
 end
 
-function DMA.Core.Comm:Send(message)
-    -- Enviar mensaje de addon por canal de hermandad. Esto es invisible en el chat.
-    if SendAddonMessage then
-        SendAddonMessage(self.PREFIX, message, "GUILD")
+function DMA.Core.Comm:Send(message, channel)
+    -- Enviar mensaje de addon por canal de hermandad/raid. Esto es invisible en el chat.
+    if not SendAddonMessage or not message or message == "" then
+        return
     end
+
+    channel = channel or "GUILD"
+    SendAddonMessage(self.PREFIX, message, channel)
 end
 
 function DMA.Core.Comm:OnAddonMessage(message, sender)
@@ -58,6 +63,9 @@ function DMA.Core.Comm:OnAddonMessage(message, sender)
     end
 
     local msgType = parts[1]
+
+    -- Debug básico para verificar recepción de mensajes
+    DEFAULT_CHAT_FRAME:AddMessage("DMA: Recibido mensaje de addon de " .. tostring(sender) .. " tipo " .. tostring(msgType))
 
     if msgType == "DKP_EVENT" then
         self:HandleDKPEvent(parts, sender)
@@ -149,7 +157,17 @@ function DMA.Core.Comm:BroadcastDKPEvent(players, value, reason)
         timestamp or time()
     )
 
-    self:Send(payload)
+    -- Enviar por GUILD para sincronizar a todos los miembros con DMA.
+    self:Send(payload, "GUILD")
+
+    -- Si estamos en raid, también enviar por RAID (algunos servidores pueden
+    -- filtrar distinto los mensajes de addon por canal). AddEvent es idempotente,
+    -- así que los clientes ignorarán duplicados.
+    if IsInRaid and IsInRaid() then
+        self:Send(payload, "RAID")
+    end
+
+    DEFAULT_CHAT_FRAME:AddMessage("DMA: Enviado DKP_EVENT a la red de addons")
 end
 
 DEFAULT_CHAT_FRAME:AddMessage("DMA: Comm module loaded")
