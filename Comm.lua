@@ -17,18 +17,21 @@ function DMA.Core.Comm:Register()
 
     frame:RegisterEvent("CHAT_MSG_ADDON")
     frame:RegisterEvent("CHAT_MSG_GUILD")
-    frame:SetScript("OnEvent", function(_, event, arg1, arg2, arg3, arg4)
+    -- Nota importante (WoW 1.12): los handlers de eventos usan las
+    -- variables globales 'event', 'arg1', 'arg2', ... igual que en
+    -- PallyPowerTW. No se pasan parámetros al callback.
+    frame:SetScript("OnEvent", function()
         if event == "CHAT_MSG_ADDON" then
-            local prefix = arg1
+            local prefix  = arg1
             local message = arg2
             local channel = arg3
-            local sender = arg4
+            local sender  = arg4
             if prefix == DMA.Core.Comm.PREFIX then
                 DMA.Core.Comm:OnAddonMessage(message, sender)
             end
         elseif event == "CHAT_MSG_GUILD" then
             local message = arg1
-            local sender = arg2
+            local sender  = arg2
             DMA.Core.Comm:OnGuildMessage(message, sender)
         end
     end)
