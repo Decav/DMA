@@ -340,15 +340,7 @@ function Cache:DelayedLoadGuildMembers()
             end
         end
 
-        if loadedCount > 0 then
-            DEFAULT_CHAT_FRAME:AddMessage("DMA: Loaded", loadedCount, "new guild members")
-        end
-        if removedCount > 0 then
-            DEFAULT_CHAT_FRAME:AddMessage("DMA: Removed", removedCount, "players no longer in guild")
-        end
-        if loadedCount == 0 and removedCount == 0 then
-            DEFAULT_CHAT_FRAME:AddMessage("DMA: Guild members up to date")
-        end
+        -- Silenciar mensajes de depuración sobre miembros cargados/eliminados
     else
         DEFAULT_CHAT_FRAME:AddMessage("DMA: No guild members found")
     end

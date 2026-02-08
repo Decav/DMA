@@ -77,6 +77,10 @@ DMAParent:SetScript("OnEvent", function()
                 -- History UI is initialized on demand
             end
         end
+        -- Mensaje único de addon listo, cuando todo está inicializado
+        if DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage("DMA: Addon cargado - usa /dma para abrir la ventana")
+        end
     end
 end)
 

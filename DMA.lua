@@ -103,8 +103,3 @@ SlashCmdList["DMA"] = function(msg)
         end
     end
 end
-
-if Logger then
-    Logger:Info("Main module loaded - use /dma to open")
-end
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Main module loaded - use /dma para abrir la ventana (/dma)")
