@@ -92,7 +92,7 @@ SlashCmdList["DMA"] = function(msg)
                 if DMA.UI and DMA.UI.MainFrame then
                     DMA.UI.MainFrame:RefreshPlayerList()
                 end
-                if Logger then Logger:Info("Guild members loaded") else DEFAULT_CHAT_FRAME:AddMessage("DMA: Guild members loaded") end
+                if Logger then Logger:Info("Guild members loaded") end
             end
         else
             if Logger then
@@ -106,6 +106,5 @@ end
 
 if Logger then
     Logger:Info("Main module loaded - use /dma to open")
-else
-    DEFAULT_CHAT_FRAME:AddMessage("DMA: Main module loaded - use /dma to open")
 end
+DEFAULT_CHAT_FRAME:AddMessage("DMA: Main module loaded - use /dma para abrir la ventana (/dma)")

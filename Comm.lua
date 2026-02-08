@@ -30,8 +30,6 @@ function DMA.Core.Comm:Register()
             end
         end
     end)
-
-    DEFAULT_CHAT_FRAME:AddMessage("DMA: Comm listening for addon messages (prefix '" .. tostring(self.PREFIX) .. "')")
 end
 
 function DMA.Core.Comm:Send(message, channel)
@@ -83,10 +81,6 @@ function DMA.Core.Comm:OnAddonMessage(message, sender)
     end
 
     local msgType = parts[1]
-
-    -- Debug básico para verificar recepción de mensajes
-    DEFAULT_CHAT_FRAME:AddMessage("DMA: Recibido mensaje de addon de " .. tostring(sender) .. " tipo " .. tostring(msgType))
-
     if msgType == "DKP_EVENT" then
         self:HandleDKPEvent(parts, sender)
     elseif msgType == "PERMISSION_ADD" then
@@ -185,8 +179,4 @@ function DMA.Core.Comm:BroadcastDKPEvent(players, value, reason)
     -- Enviar siguiendo el mismo patrón que PallyPowerTW: PARTY si no hay raid,
     -- RAID si estamos en raid. La función Send decide el canal apropiado.
     self:Send(payload)
-
-    DEFAULT_CHAT_FRAME:AddMessage("DMA: Enviado DKP_EVENT a la red de addons (" .. (players or "?") .. ")")
 end
-
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Comm module loaded")

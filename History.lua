@@ -360,5 +360,3 @@ function History:CreateEntry(event, yOffset)
 
     return entry
 end
-
-DEFAULT_CHAT_FRAME:AddMessage("DMA: History UI module loaded")

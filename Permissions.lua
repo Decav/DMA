@@ -18,7 +18,6 @@ function DMA.Core.Permissions:Init()
     local currentPlayer = UnitName("player")
     if currentPlayer and not self:IsDKPMaster(currentPlayer) then
         self:AddDKPMaster(currentPlayer)
-        DEFAULT_CHAT_FRAME:AddMessage("DMA: Added", currentPlayer, "as DKP Master for testing")
     end
 end
 
@@ -48,4 +47,4 @@ function DMA.Core.Permissions:GetAllDKPMasters()
     return list
 end
 
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Permissions module loaded")
+

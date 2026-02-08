@@ -159,4 +159,4 @@ function DMA.Data.Database:CleanupHistory()
     end
 end
 
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Database module loaded")
+

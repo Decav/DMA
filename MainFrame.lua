@@ -795,9 +795,6 @@ function MainFrame:AdjustDKP(valueStr, reason, isAward)
             local msgFormat = isAward and "DMA: Otorgados %d DKP a %s (%s)" or "DMA: Reducidos %d DKP de %s (%s)"
             for _, playerName in ipairs(selectedPlayers) do
                 local msg = string.format(msgFormat, value, playerName, eventReason)
-                if DMA.Utils and DMA.Utils.Logger then
-                    DMA.Utils.Logger:Info(msg)
-                end
                 if SendChatMessage and IsInGuild and IsInGuild() then
                     SendChatMessage(msg, "GUILD")
                 else

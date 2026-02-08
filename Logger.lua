@@ -162,11 +162,9 @@ function Logger:Init()
     if DMA_DEBUG then
         self:SetLevel(self.LEVELS.DEBUG)
     else
-        self:SetLevel(self.LEVELS.INFO)
+        -- En modo normal, solo mostrar avisos y errores para no
+        -- llenar el chat con mensajes informativos.
+        self:SetLevel(self.LEVELS.WARN)
     end
-
-    local msg = string.format("Logger initialized at %s level", self:GetLevelName(self.currentLevel))
-    self:Info(msg)
 end
 
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Logger module loaded")

@@ -32,8 +32,6 @@ DMA_DB = DMA_DB or {
 -- Event handler for VARIABLES_LOADED
 DMAParent:SetScript("OnEvent", function()
     if event == "VARIABLES_LOADED" then
-        DEFAULT_CHAT_FRAME:AddMessage("DMA: Variables loaded, initializing...")
-
         -- Initialize core modules
         if DMA.Core then
             -- Initialize database first
@@ -79,12 +77,8 @@ DMAParent:SetScript("OnEvent", function()
                 -- History UI is initialized on demand
             end
         end
-
-        DEFAULT_CHAT_FRAME:AddMessage("DMA: Initialization complete")
     end
 end)
 
 -- Register the event
 DMAParent:RegisterEvent("VARIABLES_LOADED")
-
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Init module loaded")

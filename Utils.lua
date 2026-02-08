@@ -290,4 +290,4 @@ end
 DMA.Utils.Split = DMA.Utils.General.Split
 DMA.Utils.Trim = DMA.Utils.General.Trim
 
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Utils module loaded")
+

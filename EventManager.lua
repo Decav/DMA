@@ -194,4 +194,4 @@ function EventManager:GetEventsByType(eventType)
     return filteredEvents
 end
 
-DEFAULT_CHAT_FRAME:AddMessage("DMA: EventManager module loaded")
+

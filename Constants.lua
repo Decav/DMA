@@ -101,4 +101,4 @@ Constants.SUCCESS = {
     CACHE_REBUILT = "DKP cache rebuilt"
 }
 
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Constants module loaded")
+

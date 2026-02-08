@@ -150,5 +150,3 @@ function DKPDecay:ApplyDecay()
 	end
 end
 
-Print("DKPDecay module loaded")
-

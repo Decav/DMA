@@ -26,8 +26,6 @@ end
 
 -- Rebuild entire cache from events
 function Cache:Rebuild()
-    DEFAULT_CHAT_FRAME:AddMessage("DMA: Rebuilding DKP cache...")
-
     -- Clear current cache
     DMA_DB.cache = {}
 
@@ -44,8 +42,6 @@ function Cache:Rebuild()
     for _, event in ipairs(events) do
         self:ApplyEvent(event, false) -- Don't save to DB during rebuild
     end
-
-    DEFAULT_CHAT_FRAME:AddMessage("DMA: Cache rebuilt with", self:GetPlayerCount(), "players")
 end
 
 -- Apply a single event to the cache
@@ -403,27 +399,21 @@ end
 
 -- Actualiza la nota pública de un jugador con el nuevo DKP (requiere que SetGuildMemberPublicNote exista)
 function Cache.UpdatePlayerPublicNote(playerName, newDKP)
-    DEFAULT_CHAT_FRAME:AddMessage("[DEBUG] Entrando a UpdatePlayerPublicNote para " .. (playerName or "nil") .. ", DKP: " .. tostring(newDKP))
     GuildRoster()
     for i = 1, GetNumGuildMembers() do
         local name = GetGuildRosterInfo(i)
-        DEFAULT_CHAT_FRAME:AddMessage("[DEBUG] Revisando miembro: " .. tostring(name))
         -- Elimina el sufijo '-Realm' si existe
         local shortName = nil
         if name and type(name) == "string" then
             shortName = string.gsub(name, "%-.*", "")
         end
-        DEFAULT_CHAT_FRAME:AddMessage("[DEBUG] shortName: " .. tostring(shortName))
         if shortName == playerName then
-            DEFAULT_CHAT_FRAME:AddMessage("[DEBUG] Coincidencia encontrada, actualizando nota pública para " .. shortName .. " a " .. tostring(newDKP))
             if GuildRosterSetPublicNote then
                 GuildRosterSetPublicNote(i, tostring(newDKP))
             else
-                DEFAULT_CHAT_FRAME:AddMessage("[DEBUG] SetGuildMemberPublicNote no existe en este cliente")
+                -- Cliente sin soporte para editar notas públicas
             end
             break
         end
     end
 end
-
-DEFAULT_CHAT_FRAME:AddMessage("DMA: Cache module loaded")
