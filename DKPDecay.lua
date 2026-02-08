@@ -136,7 +136,6 @@ function DKPDecay:ApplyDecay()
 	end
 
 	if decayedCount > 0 then
-		
 		-- Aviso general por hermandad (sin detallar jugadores)
 		if SendChatMessage and IsInGuild and IsInGuild() then
 			SendChatMessage("Se ha aplicado el DKP Decay mensual del 25% a los miembros de la hermandad.", "GUILD")
