@@ -16,9 +16,20 @@ function DMA.Core.Comm:Register()
     end
 
     frame:RegisterEvent("CHAT_MSG_ADDON")
-    frame:SetScript("OnEvent", function(_, event, prefix, message, channel, sender)
-        if event == "CHAT_MSG_ADDON" and prefix == DMA.Core.Comm.PREFIX then
-            DMA.Core.Comm:OnAddonMessage(message, sender)
+    frame:RegisterEvent("CHAT_MSG_GUILD")
+    frame:SetScript("OnEvent", function(_, event, arg1, arg2, arg3, arg4)
+        if event == "CHAT_MSG_ADDON" then
+            local prefix = arg1
+            local message = arg2
+            local channel = arg3
+            local sender = arg4
+            if prefix == DMA.Core.Comm.PREFIX then
+                DMA.Core.Comm:OnAddonMessage(message, sender)
+            end
+        elseif event == "CHAT_MSG_GUILD" then
+            local message = arg1
+            local sender = arg2
+            DMA.Core.Comm:OnGuildMessage(message, sender)
         end
     end)
 
@@ -71,6 +82,71 @@ function DMA.Core.Comm:OnAddonMessage(message, sender)
         self:HandleDKPEvent(parts, sender)
     elseif msgType == "PERMISSION_ADD" then
         self:HandlePermissionAdd(parts, sender)
+    end
+end
+
+-- Fallback: replicar eventos a partir de los mensajes de /g ya existentes
+-- Ejemplos de formato que enviamos desde MainFrame:
+--   "DMA: Otorgados 10 DKP a Player (Reason)"
+--   "DMA: Reducidos 5 DKP de Player (Reason)"
+function DMA.Core.Comm:OnGuildMessage(message, sender)
+    if not message or string.sub(message, 1, 4) ~= "DMA:" then
+        return
+    end
+
+    -- Ignorar nuestros propios mensajes, ya aplicamos el evento localmente
+    local selfName = UnitName and UnitName("player") or nil
+    local shortSender = sender and string.gsub(sender, "-.*", "") or sender
+    if selfName and shortSender == selfName then
+        return
+    end
+
+    local amount, playerName, reason
+    local isAward = true
+
+    -- Intentar parsear formato de otorgar DKP
+    amount, playerName, reason = string.match(message, "^DMA: Otorgados (%-?%d+) DKP a ([^%s]+) %((.*)%)")
+
+    if not amount then
+        -- Intentar formato de reducir DKP
+        amount, playerName, reason = string.match(message, "^DMA: Reducidos (%-?%d+) DKP de ([^%s]+) %((.*)%)")
+        isAward = false
+    end
+
+    if not amount or not playerName then
+        return
+    end
+
+    local baseValue = tonumber(amount)
+    if not baseValue then
+        return
+    end
+
+    local dkpValue = isAward and baseValue or -baseValue
+    local master = shortSender or "?"
+    local timestamp = time()
+
+    local eventType = "manual_adjust"
+    if DMA and DMA.Utils and DMA.Utils.Constants and DMA.Utils.Constants.EVENT_TYPES then
+        eventType = DMA.Utils.Constants.EVENT_TYPES.MANUAL_ADJUST or "manual_adjust"
+    end
+
+    local event = {
+        type    = eventType,
+        players = playerName,
+        value   = dkpValue,
+        reason  = reason or "",
+        master  = master,
+        time    = timestamp
+    }
+
+    -- Sincronizar primero el valor actual de nota pública del jugador
+    if DMA.Data and DMA.Data.Cache and DMA.Data.Cache.SyncPlayersFromPublicNote then
+        DMA.Data.Cache:SyncPlayersFromPublicNote({ playerName })
+    end
+
+    if DMA.Data and DMA.Data.Database then
+        DMA.Data.Database:AddEvent(event)
     end
 end
 
