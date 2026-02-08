@@ -121,12 +121,15 @@ function DMA.Core.Comm:OnGuildMessage(message, sender)
     local amount, playerName, reason
     local isAward = true
 
-    -- Intentar parsear formato de otorgar DKP
-    amount, playerName, reason = string.match(message, "^DMA: Otorgados (%-?%d+) DKP a ([^%s]+) %((.*)%)")
+    -- Intentar parsear formato de otorgar DKP (Lua 5.0: usar string.find con capturas)
+    -- ^DMA: Otorgados <cantidad> DKP a <jugador> (<razón>)
+    local _, _, a1, p1, r1 = string.find(message, "^DMA: Otorgados (%-?%d+) DKP a ([^%s]+) %((.*)%)")
+    amount, playerName, reason = a1, p1, r1
 
     if not amount then
         -- Intentar formato de reducir DKP
-        amount, playerName, reason = string.match(message, "^DMA: Reducidos (%-?%d+) DKP de ([^%s]+) %((.*)%)")
+        local _, _, a2, p2, r2 = string.find(message, "^DMA: Reducidos (%-?%d+) DKP de ([^%s]+) %((.*)%)")
+        amount, playerName, reason = a2, p2, r2
         isAward = false
     end
 

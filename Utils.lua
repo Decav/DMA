@@ -217,7 +217,8 @@ end
 function Utils:IsValidPlayerName(name)
     if not name or name == "" then return false end
     -- Basic validation: letters, spaces, apostrophes, no numbers at start
-    return string.match(name, "^[A-Za-z][A-Za-z ']*$") ~= nil
+    -- Lua 5.0 no tiene string.match, usamos string.find con patrón completo
+    return string.find(name, "^[A-Za-z][A-Za-z ']*$") ~= nil
 end
 
 function Utils:IsValidDKPValue(value)
