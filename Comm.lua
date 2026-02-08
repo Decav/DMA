@@ -16,7 +16,6 @@ function DMA.Core.Comm:Register()
     end
 
     frame:RegisterEvent("CHAT_MSG_ADDON")
-    frame:RegisterEvent("CHAT_MSG_GUILD")
     -- Nota importante (WoW 1.12): los handlers de eventos usan las
     -- variables globales 'event', 'arg1', 'arg2', ... igual que en
     -- PallyPowerTW. No se pasan parámetros al callback.
@@ -29,10 +28,6 @@ function DMA.Core.Comm:Register()
             if prefix == DMA.Core.Comm.PREFIX then
                 DMA.Core.Comm:OnAddonMessage(message, sender)
             end
-        elseif event == "CHAT_MSG_GUILD" then
-            local message = arg1
-            local sender  = arg2
-            DMA.Core.Comm:OnGuildMessage(message, sender)
         end
     end)
 
@@ -99,79 +94,10 @@ function DMA.Core.Comm:OnAddonMessage(message, sender)
     end
 end
 
--- Fallback: replicar eventos a partir de los mensajes de /g ya existentes
--- Ejemplos de formato que enviamos desde MainFrame:
---   "DMA: Otorgados 10 DKP a Player (Reason)"
---   "DMA: Reducidos 5 DKP de Player (Reason)"
-function DMA.Core.Comm:OnGuildMessage(message, sender)
-    if not message or string.sub(message, 1, 4) ~= "DMA:" then
-        return
-    end
-
-    -- Ignorar nuestros propios mensajes, ya aplicamos el evento localmente
-    local selfName = UnitName and UnitName("player") or nil
-    local shortSender = sender and string.gsub(sender, "-.*", "") or sender
-    if selfName and shortSender == selfName then
-        return
-    end
-
-    -- Debug: ver exactamente qué mensaje y remitente estamos intentando parsear
-    DEFAULT_CHAT_FRAME:AddMessage("DMA DBG: OnGuildMessage from " .. tostring(shortSender) .. " -> " .. tostring(message))
-
-    local amount, playerName, reason
-    local isAward = true
-
-    -- Intentar parsear formato de otorgar DKP (Lua 5.0: usar string.find con capturas)
-    -- ^DMA: Otorgados <cantidad> DKP a <jugador> (<razón>)
-    local _, _, a1, p1, r1 = string.find(message, "^DMA: Otorgados (%-?%d+) DKP a ([^%s]+) %((.*)%)")
-    amount, playerName, reason = a1, p1, r1
-
-    if not amount then
-        -- Intentar formato de reducir DKP
-        local _, _, a2, p2, r2 = string.find(message, "^DMA: Reducidos (%-?%d+) DKP de ([^%s]+) %((.*)%)")
-        amount, playerName, reason = a2, p2, r2
-        isAward = false
-    end
-
-    if not amount or not playerName then
-        DEFAULT_CHAT_FRAME:AddMessage("DMA DBG: OnGuildMessage no match for patrones de Otorgados/Reducidos")
-        return
-    end
-
-    local baseValue = tonumber(amount)
-    if not baseValue then
-        DEFAULT_CHAT_FRAME:AddMessage("DMA DBG: OnGuildMessage amount no numérico: " .. tostring(amount))
-        return
-    end
-
-    local dkpValue = isAward and baseValue or -baseValue
-    local master = shortSender or "?"
-    local timestamp = time()
-
-    local eventType = "manual_adjust"
-    if DMA and DMA.Utils and DMA.Utils.Constants and DMA.Utils.Constants.EVENT_TYPES then
-        eventType = DMA.Utils.Constants.EVENT_TYPES.MANUAL_ADJUST or "manual_adjust"
-    end
-
-    local event = {
-        type    = eventType,
-        players = playerName,
-        value   = dkpValue,
-        reason  = reason or "",
-        master  = master,
-        time    = timestamp
-    }
-
-    -- Sincronizar primero el valor actual de nota pública del jugador
-    if DMA.Data and DMA.Data.Cache and DMA.Data.Cache.SyncPlayersFromPublicNote then
-        DMA.Data.Cache:SyncPlayersFromPublicNote({ playerName })
-    end
-
-    if DMA.Data and DMA.Data.Database then
-        DMA.Data.Database:AddEvent(event)
-        DEFAULT_CHAT_FRAME:AddMessage("DMA DBG: Evento remoto aplicado para " .. tostring(playerName) .. " (" .. tostring(dkpValue) .. " DKP)")
-    end
-end
+-- Nota: Hemos eliminado el fallback basado en mensajes de hermandad (/g)
+-- para evitar que cualquiera pueda falsificar eventos de DKP escribiendo
+-- texto que parezca provenir del addon. Solo los mensajes de addon (invisibles
+-- en el chat y enviados con SendAddonMessage) se usan para replicar eventos.
 
 function DMA.Core.Comm:HandleDKPEvent(parts, sender)
     -- parts: { "DKP_EVENT", players, value, reason, master, timestamp }
