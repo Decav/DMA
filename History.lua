@@ -119,8 +119,8 @@ function History:CreateScrollFrame()
     hValue:SetText("DKP")
 
     local hReason = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    hReason:SetPoint("LEFT", hValue, "RIGHT", 10, 0)
-    hReason:SetWidth(140)
+    hReason:SetPoint("LEFT", hValue, "RIGHT", -15, 0)
+    hReason:SetWidth(220)
     hReason:SetText("Reason")
 end
 
@@ -348,14 +348,15 @@ function History:CreateEntry(event, yOffset)
     entry.valueText:SetWidth(60)
     entry.valueText:SetText(valueColor .. value)
 
-    -- Reason
+    -- Reason: mostrar lo máximo posible sin tooltip, solo con truncado suave
     local reasonText = event.reason or ""
-    if strlen(reasonText) > 15 then
-        reasonText = strsub(reasonText, 1, 12) .. "..."
+    -- Permitir razones bastante largas antes de truncar
+    if strlen(reasonText) > 25 then
+        reasonText = strsub(reasonText, 1, 23) .. "..."
     end
     entry.reasonText = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    entry.reasonText:SetPoint("LEFT", entry.valueText, "RIGHT", 10, 0)
-    entry.reasonText:SetWidth(140)
+    entry.reasonText:SetPoint("LEFT", entry.valueText, "RIGHT", -25, 0)
+    entry.reasonText:SetWidth(220)
     entry.reasonText:SetText(reasonText)
 
     return entry

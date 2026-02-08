@@ -99,10 +99,20 @@ function MainFrame:CreateHistoryButton()
     button:SetScript("OnEnter", function() button:SetBackdropColor(0.5,0.5,0.5,1) end)
     button:SetScript("OnLeave", function() button:SetBackdropColor(0.2,0.2,0.2,1) end)
     button:SetScript("OnClick", function()
-        if DMA.UI and DMA.UI.History and DMA.UI.History.ShowAttached then
-            DMA.UI.History:ShowAttached(self.frame)
-        elseif DMA.UI and DMA.UI.History then
-            DMA.UI.History:Toggle()
+        if not DMA.UI or not DMA.UI.History then return end
+
+        local history = DMA.UI.History
+        -- Si el historial ya está visible, actúa como toggle y lo oculta
+        if history.frame and history.frame:IsShown() then
+            history:Hide()
+            return
+        end
+
+        -- Si no está visible, mostrarlo anclado al MainFrame cuando sea posible
+        if history.ShowAttached and self.frame then
+            history:ShowAttached(self.frame)
+        else
+            history:Toggle()
         end
     end)
 
