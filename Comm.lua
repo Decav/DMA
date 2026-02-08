@@ -112,6 +112,9 @@ function DMA.Core.Comm:OnGuildMessage(message, sender)
         return
     end
 
+    -- Debug: ver exactamente qué mensaje y remitente estamos intentando parsear
+    DEFAULT_CHAT_FRAME:AddMessage("DMA DBG: OnGuildMessage from " .. tostring(shortSender) .. " -> " .. tostring(message))
+
     local amount, playerName, reason
     local isAward = true
 
@@ -125,11 +128,13 @@ function DMA.Core.Comm:OnGuildMessage(message, sender)
     end
 
     if not amount or not playerName then
+        DEFAULT_CHAT_FRAME:AddMessage("DMA DBG: OnGuildMessage no match for patrones de Otorgados/Reducidos")
         return
     end
 
     local baseValue = tonumber(amount)
     if not baseValue then
+        DEFAULT_CHAT_FRAME:AddMessage("DMA DBG: OnGuildMessage amount no numérico: " .. tostring(amount))
         return
     end
 
@@ -158,6 +163,7 @@ function DMA.Core.Comm:OnGuildMessage(message, sender)
 
     if DMA.Data and DMA.Data.Database then
         DMA.Data.Database:AddEvent(event)
+        DEFAULT_CHAT_FRAME:AddMessage("DMA DBG: Evento remoto aplicado para " .. tostring(playerName) .. " (" .. tostring(dkpValue) .. " DKP)")
     end
 end
 
