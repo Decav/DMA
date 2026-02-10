@@ -138,10 +138,11 @@ function MainFrame:CreatePlayerList()
     listFrame:SetBackdropColor(0.04, 0.04, 0.04, 0.95)
     listFrame:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
 
-    -- Title
+    -- Title (se usará para mostrar el número de jugadores)
     local title = listFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", listFrame, "TOPLEFT", 6, -6)
-    title:SetText("Players & DKP")
+    title:SetText("Players: 0")
+    self.playerTitle = title
 
     -- Load Guild button
     local loadGuildBtn = CreateFrame("Button", nil, listFrame)
@@ -535,13 +536,20 @@ end
 function MainFrame:GetCurrentPlayerList()
     local players = {}
 
-    -- Siempre usar miembros de la hermandad (no solo raid)
-    if DMA.Data and DMA.Data.Cache then
+    -- Si ya tenemos una tabla de roster precalculada, usarla para evitar
+    -- volver a recorrer todo el roster de hermandad.
+    if self.rosterByName then
+        for name, _ in pairs(self.rosterByName) do
+            table.insert(players, name)
+        end
+    elseif DMA.Data and DMA.Data.Cache then
+        -- Fallback: usar el método del cache (puede leer del roster internamente)
         local cachePlayers = DMA.Data.Cache:GetAllPlayersByDKP()
         for _, player in ipairs(cachePlayers) do
             table.insert(players, player.name)
         end
     end
+
     -- Ordenar alfabéticamente (case-insensitive)
     table.sort(players, function(a, b)
         if not a or not b then return false end
@@ -555,14 +563,42 @@ end
 function MainFrame:RefreshPlayerList()
     if not self.playerContent then return end
 
-    -- Clear existing entries
-    for _, entry in ipairs(self.playerEntries) do
-        entry:Hide()
+    -- Record which players were selected previously to restore selection by name
+    local previouslySelected = {}
+    if self.playerEntries then
+        for _, entry in ipairs(self.playerEntries) do
+            if entry.checkbox and entry.checkbox:GetChecked() and entry.checkbox.playerName then
+                previouslySelected[entry.checkbox.playerName] = true
+            end
+        end
+    else
+        self.playerEntries = {}
     end
-    self.playerEntries = {}
 
     -- Forzar actualización del roster de hermandad antes de obtener los jugadores
     if GuildRoster then GuildRoster() end
+
+    -- Construir una tabla auxiliar con la información de roster por nombre
+    self.rosterByName = {}
+    if GetNumGuildMembers and GetGuildRosterInfo then
+        local numMembers = GetNumGuildMembers()
+        for i = 1, numMembers do
+            local name, _, _, _, cName, _, note, _, _, _, cTag = GetGuildRosterInfo(i)
+            if name then
+                name = string.gsub(name, "-.*", "")
+                local dkp = 0
+                if note and note ~= "" then
+                    dkp = tonumber(note) or 0
+                end
+                self.rosterByName[name] = {
+                    dkp = dkp,
+                    className = cName,
+                    classTag = cTag
+                }
+            end
+        end
+    end
+
     -- Get current players
     local players = self:GetCurrentPlayerList()
 
@@ -573,7 +609,7 @@ function MainFrame:RefreshPlayerList()
         filter = string.lower(string.gsub(filter, "^%s*(.-)%s*$", "%1"))
     end
 
-    -- Create entries
+    -- Create / reuse entries
     local yOffset = 0
     local shown = 0
     for _, playerName in ipairs(players) do
@@ -587,16 +623,79 @@ function MainFrame:RefreshPlayerList()
 
         if include then
             shown = shown + 1
-            if shown > 50 then break end -- Limit for performance
+            local entry = self.playerEntries[shown]
+            if not entry then
+                entry = self:CreatePlayerEntry(playerName, yOffset)
+                self.playerEntries[shown] = entry
+            else
+                -- Reuse existing frame, just update its contents and position
+                entry:SetPoint("TOPLEFT", self.playerContent, "TOPLEFT", 0, yOffset)
 
-            local entry = self:CreatePlayerEntry(playerName, yOffset)
-            table.insert(self.playerEntries, entry)
+                -- Update basic data
+                entry.checkbox.playerName = playerName
+                entry.nameText:SetText(playerName)
+
+                -- Update class/DKP using the precalculated roster table
+                local dkp = 0
+                local className = ""
+                local classTag = nil
+                if self.rosterByName then
+                    local info = self.rosterByName[playerName]
+                    if info then
+                        dkp = info.dkp or 0
+                        className = info.className or ""
+                        classTag = info.classTag
+                    end
+                end
+
+                local classDisplay = className or ""
+                if RAID_CLASS_COLORS and classTag and RAID_CLASS_COLORS[classTag] and className and className ~= "" then
+                    local c = RAID_CLASS_COLORS[classTag]
+                    local r = math.floor((c.r or 1) * 255)
+                    local g = math.floor((c.g or 1) * 255)
+                    local b = math.floor((c.b or 1) * 255)
+                    classDisplay = string.format("|cff%02x%02x%02x%s", r, g, b, className)
+                end
+                entry.classText:SetText(classDisplay)
+
+                local dkpColor = dkp >= 0 and "|cff00ff00" or "|cffff0000"
+                entry.dkpText:SetText(dkpColor .. dkp)
+            end
+
+            -- Restore selection state by player name
+            if previouslySelected[playerName] then
+                entry.checkbox:SetChecked(true)
+            else
+                entry.checkbox:SetChecked(false)
+            end
+
+            entry:Show()
             yOffset = yOffset - 20
         end
     end
 
-    -- Resize content
+    -- Hide any leftover entries that are no longer used
+    for i = shown + 1, table.getn(self.playerEntries) do
+        if self.playerEntries[i] then
+            self.playerEntries[i]:Hide()
+        end
+    end
+
+    -- Resize content y actualizar el rango del scroll
     self.playerContent:SetHeight(math.max(1, math.abs(yOffset)))
+
+    -- Asegurar que el ScrollFrame actualice sus límites y vuelva al inicio
+    if self.playerScrollFrame then
+        if self.playerScrollFrame.UpdateScrollChildRect then
+            self.playerScrollFrame:UpdateScrollChildRect()
+        end
+        self.playerScrollFrame:SetVerticalScroll(0)
+    end
+
+    -- Actualizar título con el número de jugadores mostrados
+    if self.playerTitle then
+        self.playerTitle:SetText("Players: " .. tostring(shown))
+    end
 end
 
 -- Create a player entry in the list
@@ -606,25 +705,16 @@ function MainFrame:CreatePlayerEntry(playerName, yOffset)
     entry:SetHeight(20)
     entry:SetPoint("TOPLEFT", self.playerContent, "TOPLEFT", 0, yOffset)
 
-    -- Obtener DKP y clase directamente del roster de hermandad
+    -- Obtener DKP y clase usando la tabla precalculada de roster
     local dkp = 0
     local className = ""
     local classTag = nil
-    if GetNumGuildMembers and GetGuildRosterInfo then
-        local numMembers = GetNumGuildMembers()
-        for i = 1, numMembers do
-            local name, _, _, _, cName, _, note, _, _, _, cTag = GetGuildRosterInfo(i)
-            if name then
-                name = string.gsub(name, "-.*", "")
-                if name == playerName then
-                    if note and note ~= "" then
-                        dkp = tonumber(note) or 0
-                    end
-                    className = cName or ""
-                    classTag = cTag
-                    break
-                end
-            end
+    if self.rosterByName then
+        local info = self.rosterByName[playerName]
+        if info then
+            dkp = info.dkp or 0
+            className = info.className or ""
+            classTag = info.classTag
         end
     end
 

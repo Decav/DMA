@@ -14,6 +14,29 @@ local FRAME_HEIGHT = 400
 local ENTRY_HEIGHT = 20
 local MAX_VISIBLE_ENTRIES = 15
 
+-- Popup de confirmación para limpiar historial/cache de la guild actual
+StaticPopupDialogs = StaticPopupDialogs or {}
+StaticPopupDialogs["DMA_CLEAR_GUILD_DATA"] = {
+    text = "Esto borrará TODO el historial DKP y el cache de la hermandad/personaje actual.\n\n¿Seguro que quieres continuar?",
+    button1 = YES,
+    button2 = NO,
+    OnAccept = function()
+        if DMA.Data and DMA.Data.Database and DMA.Data.Database.ClearCurrentGuildData then
+            DMA.Data.Database:ClearCurrentGuildData()
+        end
+        -- Refrescar UI después de limpiar
+        if DMA.UI and DMA.UI.History then
+            DMA.UI.History:Refresh()
+        end
+        if DMA.UI and DMA.UI.MainFrame and DMA.UI.MainFrame.RefreshPlayerList then
+            DMA.UI.MainFrame:RefreshPlayerList()
+        end
+    end,
+    timeout = 0,
+    whileDead = 1,
+    hideOnEscape = 1,
+}
+
 -- Initialize history UI
 function History:Init()
     if self.frame then return end
@@ -158,6 +181,25 @@ function History:CreateFilterControls()
     refreshBtn:SetScript("OnLeave", function() refreshBtn:SetBackdropColor(0.2,0.2,0.2,1) end)
     
     refreshBtn:SetScript("OnClick", function() History:Refresh() end)
+
+    -- Clear button (limpiar historial/cache de la guild actual)
+    local clearBtn = CreateFrame("Button", nil, self.frame)
+    clearBtn:SetWidth(80)
+    clearBtn:SetHeight(22)
+    clearBtn:SetPoint("RIGHT", refreshBtn, "LEFT", -10, 0)
+    clearBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+    clearBtn:SetBackdropColor(bgr[1], bgr[2], bgr[3], bgr[4] or 1)
+    clearBtn:SetBackdropBorderColor(bdr[1], bdr[2], bdr[3], bdr[4] or 1)
+    clearBtn.text = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    clearBtn.text:SetPoint("CENTER", clearBtn, "CENTER", 0, 0)
+    clearBtn.text:SetText("Clear")
+    clearBtn:SetScript("OnEnter", function() clearBtn:SetBackdropColor(0.5,0.5,0.5,1) end)
+    clearBtn:SetScript("OnLeave", function() clearBtn:SetBackdropColor(0.2,0.2,0.2,1) end)
+    clearBtn:SetScript("OnClick", function()
+        if StaticPopup_Show then
+            StaticPopup_Show("DMA_CLEAR_GUILD_DATA")
+        end
+    end)
 end
 
 -- Show history window
