@@ -6,17 +6,16 @@
 ## SavedVariables: DMA_DB
 
 Init.lua
-Constants.lua
-Logger.lua
-Utils.lua
-Comm.lua
-Events.lua
-Permissions.lua
-EventManager.lua
-Database.lua
-Cache.lua
-MainFrame.lua
-DKPMaster.lua
-History.lua
-DKPDecay.lua
+Utils\Constants.lua
+Utils\Logger.lua
+Utils\Utils.lua
+Core\Comm.lua
+Core\Events.lua
+Core\Permissions.lua
+Core\EventManager.lua
+Core\DKPDecay.lua
+Database\Database.lua
+Database\Cache.lua
+UI\MainFrame.lua
+UI\History.lua
 DMA.lua
