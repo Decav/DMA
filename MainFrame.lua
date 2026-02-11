@@ -253,11 +253,40 @@ function MainFrame:CreateDKPMasterPanel()
     local bgr = {0.2,0.2,0.2,1}
     local bdr = {0.2,0.2,0.2,1}
 
+    -- Raid status info (recordatorio visual)
+    local raidText = "Raid: Not in a raid"
+    local zoneName = nil
+    if GetRealZoneText then
+        zoneName = GetRealZoneText()
+    end
+
+    if UnitInRaid and GetNumRaidMembers and UnitInRaid("player") then
+        local numMembers = GetNumRaidMembers() or 0
+        if numMembers > 0 then
+            if zoneName and zoneName ~= "" then
+                raidText = "Raid: " .. numMembers .. " members - " .. zoneName
+            else
+                raidText = "Raid: " .. numMembers .. " members"
+            end
+        else
+            if zoneName and zoneName ~= "" then
+                raidText = "Raid: In raid - " .. zoneName
+            else
+                raidText = "Raid: In raid"
+            end
+        end
+    end
+
+    local raidStatus = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    raidStatus:SetPoint("TOP", panelFrame, "TOP", 0, -26)
+    raidStatus:SetText(raidText)
+    self.raidStatusText = raidStatus
+
     -- Player selection buttons
     local selectAllBtn = CreateFrame("Button", nil, panelFrame)
     selectAllBtn:SetWidth(85)
     selectAllBtn:SetHeight(22)
-    selectAllBtn:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", 10, -25)
+    selectAllBtn:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", 10, -45)
     selectAllBtn:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
     selectAllBtn:SetBackdropColor(bgr[1], bgr[2], bgr[3], bgr[4] or 1)
     selectAllBtn:SetBackdropBorderColor(bdr[1], bdr[2], bdr[3], bdr[4] or 1)
