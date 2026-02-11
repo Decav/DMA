@@ -76,6 +76,9 @@ DMAParent:SetScript("OnEvent", function()
             if DMA.UI.History then
                 -- History UI is initialized on demand
             end
+            if DMA.UI.MinimapButton and DMA.UI.MinimapButton.Init then
+                DMA.UI.MinimapButton:Init()
+            end
         end
         -- Mensaje único de addon listo, cuando todo está inicializado
         if DEFAULT_CHAT_FRAME then

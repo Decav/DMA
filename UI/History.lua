@@ -9,7 +9,7 @@ DMA.UI.History = {}
 
 local History = DMA.UI.History
 
-local FRAME_WIDTH = 600
+local FRAME_WIDTH = 680
 local FRAME_HEIGHT = 400
 local ENTRY_HEIGHT = 20
 local MAX_VISIBLE_ENTRIES = 15
@@ -133,7 +133,7 @@ function History:CreateScrollFrame()
 
     local hPlayers = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     hPlayers:SetPoint("LEFT", hMaster, "RIGHT", 10, 0)
-    hPlayers:SetWidth(120)
+    hPlayers:SetWidth(80)
     hPlayers:SetText("Players")
 
     local hValue = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -141,9 +141,14 @@ function History:CreateScrollFrame()
     hValue:SetWidth(60)
     hValue:SetText("DKP")
 
+    local hZone = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    hZone:SetPoint("LEFT", hValue, "RIGHT", 10, 0)
+    hZone:SetWidth(90)
+    hZone:SetText("Zone")
+
     local hReason = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    hReason:SetPoint("LEFT", hValue, "RIGHT", -15, 0)
-    hReason:SetWidth(220)
+    hReason:SetPoint("LEFT", hZone, "RIGHT", -25, 0)
+    hReason:SetWidth(280)
     hReason:SetText("Reason")
 end
 
@@ -154,13 +159,24 @@ function History:CreateFilterControls()
     playerLabel:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", 15, 15)
     playerLabel:SetText("Player:")
 
-    local playerBox = CreateFrame("EditBox", nil, self.frame, "InputBoxTemplate")
+    local playerBox = CreateFrame("EditBox", nil, self.frame)
     playerBox:SetWidth(100)
     playerBox:SetHeight(20)
     playerBox:SetPoint("LEFT", playerLabel, "RIGHT", 5, 0)
     playerBox:SetAutoFocus(false)
+    playerBox:SetMultiLine(false)
+    playerBox:SetFontObject(GameFontHighlightSmall)
+    playerBox:SetTextColor(1, 1, 1)
+    playerBox:SetTextInsets(4, 4, 4, 4)
+    playerBox:SetJustifyH("LEFT")
+    playerBox:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+    playerBox:SetBackdropColor(0.1, 0.1, 0.1, 1)
+    playerBox:SetBackdropBorderColor(0, 0, 0, 1)
     playerBox:SetScript("OnTextChanged", function()
         History:Refresh()
+    end)
+    playerBox:SetScript("OnEscapePressed", function(self)
+        playerBox:ClearFocus()
     end)
     self.playerFilter = playerBox
 
@@ -337,6 +353,7 @@ function History:GetFilteredEvents()
                                 reason = event.reason,
                                 master = event.master,
                                 time = event.time,
+                                zone = event.zone,
                             }
                             table.insert(filteredEvents, singleEvent)
                         end
@@ -374,12 +391,12 @@ function History:CreateEntry(event, yOffset)
 
     -- Players
     local playersText = event.players or ""
-    if strlen(playersText) > 20 then
-        playersText = strsub(playersText, 1, 17) .. "..."
+    if strlen(playersText) > 14 then
+        playersText = strsub(playersText, 1, 12) .. "..."
     end
     entry.playersText = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     entry.playersText:SetPoint("LEFT", entry.masterText, "RIGHT", 10, 0)
-    entry.playersText:SetWidth(120)
+    entry.playersText:SetWidth(80)
     entry.playersText:SetText(playersText)
 
     -- Value
@@ -390,15 +407,24 @@ function History:CreateEntry(event, yOffset)
     entry.valueText:SetWidth(60)
     entry.valueText:SetText(valueColor .. value)
 
+    -- Zone / instancia
+    local zoneText = event.zone or ""
+    if strlen(zoneText) > 14 then
+        zoneText = strsub(zoneText, 1, 12) .. "..."
+    end
+    entry.zoneText = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    entry.zoneText:SetPoint("LEFT", entry.valueText, "RIGHT", 10, 0)
+    entry.zoneText:SetWidth(90)
+    entry.zoneText:SetText(zoneText)
+
     -- Reason: mostrar lo máximo posible sin tooltip, solo con truncado suave
     local reasonText = event.reason or ""
-    -- Permitir razones bastante largas antes de truncar
-    if strlen(reasonText) > 25 then
-        reasonText = strsub(reasonText, 1, 23) .. "..."
+    if strlen(reasonText) > 40 then
+        reasonText = strsub(reasonText, 1, 38) .. "..."
     end
     entry.reasonText = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    entry.reasonText:SetPoint("LEFT", entry.valueText, "RIGHT", -25, 0)
-    entry.reasonText:SetWidth(220)
+    entry.reasonText:SetPoint("LEFT", entry.zoneText, "RIGHT", -25, 0)
+    entry.reasonText:SetWidth(280)
     entry.reasonText:SetText(reasonText)
 
     return entry

@@ -58,7 +58,7 @@ function DMA.Core.Comm:OnAddonMessage(message, sender)
         return
     end
 
-    -- Formato interno: DKP_EVENT^players^value^reason^master^timestamp
+    -- Formato interno: DKP_EVENT^players^value^reason^master^timestamp[^zone]
     local delimiter = "^"
 
     local parts = {}
@@ -94,12 +94,16 @@ end
 -- en el chat y enviados con SendAddonMessage) se usan para replicar eventos.
 
 function DMA.Core.Comm:HandleDKPEvent(parts, sender)
-    -- parts: { "DKP_EVENT", players, value, reason, master, timestamp }
+    -- parts (nuevo formato): { "DKP_EVENT", players, value, reason, master, timestamp, [zone] }
+    -- Nota: por compatibilidad con versiones antiguas o razones vacías, algunos campos pueden
+    -- desplazarse si están vacíos, ya que el parser actual omite segmentos vacíos. Asumimos
+    -- que 'reason' suele venir relleno en uso normal.
     local players   = parts[2]
     local value     = tonumber(parts[3])
     local reason    = parts[4]
     local master    = parts[5]
     local timestamp = tonumber(parts[6])
+    local zone      = parts[7]
     -- Ignorar nuestro propio mensaje de red (ya aplicamos localmente)
     if sender and UnitName and sender == UnitName("player") then
         return
@@ -117,7 +121,8 @@ function DMA.Core.Comm:HandleDKPEvent(parts, sender)
         value   = value,
         reason  = reason,
         master  = master,
-        time    = timestamp
+        time    = timestamp,
+        zone    = zone or ""
     }
 
     -- Antes de aplicar el evento, sincronizar el cache con la nota pública
@@ -165,15 +170,20 @@ end
 function DMA.Core.Comm:BroadcastDKPEvent(players, value, reason)
     local master    = UnitName("player")
     local timestamp = time()
+    local zone      = nil
+    if GetRealZoneText then
+        zone = GetRealZoneText()
+    end
 
-    -- Formato interno solo para payload: DKP_EVENT^players^value^reason^master^timestamp
+    -- Formato interno solo para payload: DKP_EVENT^players^value^reason^master^timestamp[^zone]
     local payload = string.format(
-        "DKP_EVENT^%s^%d^%s^%s^%d",
+        "DKP_EVENT^%s^%d^%s^%s^%d^%s",
         players or "",
         value or 0,
         reason or "",
         master or "?",
-        timestamp or time()
+        timestamp or time(),
+        zone or ""
     )
 
     -- Enviar siguiendo el mismo patrón que PallyPowerTW: PARTY si no hay raid,

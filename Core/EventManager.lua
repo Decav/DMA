@@ -26,6 +26,10 @@ function EventManager:CreateEvent(eventType, players, value, reason, master)
     end
 
     local timestamp = time()
+    local zone = nil
+    if GetRealZoneText then
+        zone = GetRealZoneText()
+    end
     local eventId = self:GenerateEventId(master, timestamp, players, value)
 
     local event = {
@@ -35,7 +39,8 @@ function EventManager:CreateEvent(eventType, players, value, reason, master)
         value = value,
         reason = reason or "",
         master = master,
-        time = timestamp
+        time = timestamp,
+        zone = zone or ""
     }
 
     return event
