@@ -49,9 +49,41 @@ function MainFrame:Init()
 
     self:CreateTitle()
     self:CreateCloseButton()
+    self:CreateConfigButton()
     self:CreateHistoryButton()
     self:CreatePlayerList()
     self:CreateDKPMasterPanel()
+end
+
+-- Botón para abrir la configuración de DKP
+function MainFrame:CreateConfigButton()
+    if not self.frame then return end
+
+    local bgr = {0.2,0.2,0.2,1}
+    local bdr = {0.2,0.2,0.2,1}
+    local button = CreateFrame("Button", nil, self.frame)
+    button:SetWidth(60)
+    button:SetHeight(20)
+    button:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 5, -5)
+    button:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+    button:SetBackdropColor(bgr[1], bgr[2], bgr[3], bgr[4] or 1)
+    button:SetBackdropBorderColor(bdr[1], bdr[2], bdr[3], bdr[4] or 1)
+    button.text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    button.text:SetPoint("CENTER", button, "CENTER", 0, 0)
+    button.text:SetText("Config")
+    button:SetScript("OnEnter", function() button:SetBackdropColor(0.5,0.5,0.5,1) end)
+    button:SetScript("OnLeave", function() button:SetBackdropColor(0.2,0.2,0.2,1) end)
+    button:SetScript("OnClick", function()
+        if DMA.UI and DMA.UI.DKPConfig and DMA.UI.DKPConfig.Toggle then
+            DMA.UI.DKPConfig:Toggle()
+        else
+            if DEFAULT_CHAT_FRAME then
+                DEFAULT_CHAT_FRAME:AddMessage("DMA: DKPConfig no disponible")
+            end
+        end
+    end)
+
+    self.configButton = button
 end
 
 function MainFrame:CreateTitle()
@@ -238,17 +270,17 @@ function MainFrame:CreateDKPMasterPanel()
     local canEdit = (CanEditPublicNote and CanEditPublicNote()) or 0
     local isMaster = (canEdit == 1)
 
-    if not isMaster then
-        local noAccessText = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        noAccessText:SetPoint("CENTER", panelFrame, "CENTER", 0, 0)
-        if canEdit == 0 then
-            noAccessText:SetText("You are not a DKP Master")
-        else
-            -- Información de guild aún no disponible (canEdit nil)
-            noAccessText:SetText("Guild info not ready. Please open again in a few seconds or /reload.")
-        end
-        return
-    end
+    --if not isMaster then
+    --    local noAccessText = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    --    noAccessText:SetPoint("CENTER", panelFrame, "CENTER", 0, 0)
+    --    if canEdit == 0 then
+    --        noAccessText:SetText("You are not a DKP Master")
+    --    else
+    --        -- Información de guild aún no disponible (canEdit nil)
+    --        noAccessText:SetText("Guild info not ready. Please open again in a few seconds or /reload.")
+    --    end
+    --    return
+    --end
 
     local bgr = {0.2,0.2,0.2,1}
     local bdr = {0.2,0.2,0.2,1}
@@ -325,9 +357,178 @@ function MainFrame:CreateDKPMasterPanel()
     selectRaidBtn:SetScript("OnLeave", function() selectRaidBtn:SetBackdropColor(0.2,0.2,0.2,1) end)
     selectRaidBtn:SetScript("OnClick", function() self:SelectRaidPlayers() end)
 
-    -- DKP Value input
+    local EVENT_TYPE_OPTIONS = {
+        { key = "STAY",    label = "Stay in raid" },
+        { key = "EARLY",   label = "Arrive early" },
+        { key = "BOSS",    label = "Boss kill" },
+        { key = "ITEM",    label = "Item" },
+        { key = "PENALTY", label = "Penalty" },
+    }
+
+    local RAID_OPTIONS = {
+        { key = "MC",   label = "Molten Core" },
+        { key = "BWL",  label = "Blackwing Lair" },
+        { key = "AQ40", label = "Ahn'Qiraj 40" },
+        { key = "NAXX", label = "Naxxramas" },
+    }
+
+    -- Raid label + dropdown (selección de raid para usar config de DKP)
+    local raidLabel = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    raidLabel:SetPoint("TOPLEFT", selectAllBtn, "BOTTOMLEFT", 0, -10)
+    raidLabel:SetText("Raid:")
+
+    local raidButton = CreateFrame("Button", nil, panelFrame)
+    raidButton:SetWidth(140)
+    raidButton:SetHeight(20)
+    raidButton:SetPoint("LEFT", raidLabel, "RIGHT", 5, 0)
+    raidButton:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+    raidButton:SetBackdropColor(bgr[1], bgr[2], bgr[3], bgr[4] or 1)
+    raidButton:SetBackdropBorderColor(bdr[1], bdr[2], bdr[3], bdr[4] or 1)
+    raidButton.text = raidButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    raidButton.text:SetPoint("CENTER", raidButton, "CENTER", 0, 0)
+    raidButton.text:SetText("Select raid")
+
+    raidButton:SetScript("OnEnter", function() raidButton:SetBackdropColor(0.5,0.5,0.5,1) end)
+    raidButton:SetScript("OnLeave", function() raidButton:SetBackdropColor(0.2,0.2,0.2,1) end)
+
+    raidButton:SetScript("OnClick", function()
+        local btn = raidButton
+        if not btn then return end
+
+        if not btn.menu then
+            local menu = CreateFrame("Frame", nil, panelFrame)
+            menu:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2)
+            menu:SetFrameStrata("DIALOG")
+            menu:SetWidth(160)
+            menu:SetHeight(table.getn(RAID_OPTIONS) * 20)
+            menu:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+            menu:SetBackdropColor(0.15,0.15,0.15,1)
+            menu:SetBackdropBorderColor(0.2,0.2,0.2,1)
+            menu:Hide()
+            btn.menu = menu
+
+            local function makeChoice(key, label, index)
+                local b = CreateFrame("Button", nil, menu)
+                b:SetWidth(160)
+                b:SetHeight(20)
+                b:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, -((index - 1) * 20))
+                b:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+                b:SetBackdropColor(0.2,0.2,0.2,1)
+                b:SetBackdropBorderColor(0.2,0.2,0.2,1)
+                b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                b.text:SetPoint("CENTER", b, "CENTER", 0, 0)
+                b.text:SetText(label)
+                b:SetScript("OnEnter", function() b:SetBackdropColor(0.5,0.5,0.5,1) end)
+                b:SetScript("OnLeave", function() b:SetBackdropColor(0.2,0.2,0.2,1) end)
+                b:SetScript("OnClick", function()
+                    if btn and btn.text then
+                        btn.text:SetText(label)
+                    end
+                    if MainFrame and MainFrame.SetRaidKey then
+                        MainFrame:SetRaidKey(key, label)
+                    end
+                    menu:Hide()
+                end)
+            end
+
+            -- Construimos manualmente para evitar cierres raros con ipairs
+            makeChoice("MC",   "Molten Core",    1)
+            makeChoice("BWL",  "Blackwing Lair", 2)
+            makeChoice("AQ40", "Ahn'Qiraj 40",   3)
+            makeChoice("NAXX", "Naxxramas",      4)
+        end
+
+        local menu = btn.menu
+        if menu then
+            if menu:IsShown() then
+                menu:Hide()
+            else
+                menu:Show()
+            end
+        end
+    end)
+
+    -- Event type label + dropdown (fila superior del formulario)
+    local typeLabel = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    typeLabel:SetPoint("TOPLEFT", raidLabel, "BOTTOMLEFT", 0, -15)
+    typeLabel:SetText("Type:")
+
+    local typeButton = CreateFrame("Button", nil, panelFrame)
+    typeButton:SetWidth(100)
+    typeButton:SetHeight(20)
+    typeButton:SetPoint("LEFT", typeLabel, "RIGHT", 5, 0)
+    typeButton:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+    typeButton:SetBackdropColor(bgr[1], bgr[2], bgr[3], bgr[4] or 1)
+    typeButton:SetBackdropBorderColor(bdr[1], bdr[2], bdr[3], bdr[4] or 1)
+    typeButton.text = typeButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    typeButton.text:SetPoint("CENTER", typeButton, "CENTER", 0, 0)
+    typeButton.text:SetText("Item")
+
+    typeButton:SetScript("OnEnter", function() typeButton:SetBackdropColor(0.5,0.5,0.5,1) end)
+    typeButton:SetScript("OnLeave", function() typeButton:SetBackdropColor(0.2,0.2,0.2,1) end)
+
+    -- Menú colgado del botón de tipo (clonado de simpleAuras, pero usando typeButton)
+    typeButton:SetScript("OnClick", function()
+        local btn = typeButton
+        if not btn then return end
+
+        if not btn.menu then
+            local menu = CreateFrame("Frame", nil, panelFrame)
+            menu:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2)
+            menu:SetFrameStrata("DIALOG")
+            menu:SetWidth(120)
+            menu:SetHeight(table.getn(EVENT_TYPE_OPTIONS) * 20)
+            menu:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+            menu:SetBackdropColor(0.15,0.15,0.15,1)
+            menu:SetBackdropBorderColor(0.2,0.2,0.2,1)
+            menu:Hide()
+            btn.menu = menu
+
+            local function makeChoice(key, label, index)
+                local b = CreateFrame("Button", nil, menu)
+                b:SetWidth(120)
+                b:SetHeight(20)
+                b:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, -((index - 1) * 20))
+                b:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+                b:SetBackdropColor(0.2,0.2,0.2,1)
+                b:SetBackdropBorderColor(0.2,0.2,0.2,1)
+                b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                b.text:SetPoint("CENTER", b, "CENTER", 0, 0)
+                b.text:SetText(label)
+                b:SetScript("OnEnter", function() b:SetBackdropColor(0.5,0.5,0.5,1) end)
+                b:SetScript("OnLeave", function() b:SetBackdropColor(0.2,0.2,0.2,1) end)
+                b:SetScript("OnClick", function()
+                    if btn and btn.text then
+                        btn.text:SetText(label)
+                    end
+                    if MainFrame and MainFrame.SetEventType then
+                        MainFrame:SetEventType(key, label)
+                    end
+                    menu:Hide()
+                end)
+            end
+
+            -- Construir opciones en lugar de usar ipairs sobre EVENT_TYPE_OPTIONS para evitar cierres raros
+            makeChoice("STAY",    "Stay in raid", 1)
+            makeChoice("EARLY",   "Arrive early", 2)
+            makeChoice("BOSS",    "Boss kill",    3)
+            makeChoice("ITEM",    "Item",         4)
+            makeChoice("PENALTY", "Penalty",      5)
+        end
+
+        local menu = btn.menu
+        if menu then
+            if menu:IsShown() then
+                menu:Hide()
+            else
+                menu:Show()
+            end
+        end
+    end)
+
+    -- DKP Value label (fila siguiente del formulario, alineado con el label de Type/Raid)
     local valueLabel = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    valueLabel:SetPoint("TOPLEFT", selectAllBtn, "BOTTOMLEFT", 0, -15)
+    valueLabel:SetPoint("TOPLEFT", typeLabel, "BOTTOMLEFT", 0, -15)
     valueLabel:SetText("DKP Value:")
 
     local valueBox = CreateFrame("EditBox", nil, panelFrame)
@@ -422,8 +623,52 @@ function MainFrame:CreateDKPMasterPanel()
     decayBtn:SetScript("OnClick", function() MainFrame:ShowDecayConfirmDialog() end)
 
     -- Store references for later use when awarding/deducting DKP
+    self.valueLabel = valueLabel
     self.valueBox = valueBox
+    self.reasonLabel = reasonLabel
     self.reasonBox = reasonBox
+    self.eventTypeButton = typeButton
+
+    self.raidLabel = raidLabel
+    self.raidButton = raidButton
+
+    -- Default raid (intenta detectar por zona; si no, MC por defecto)
+    if MainFrame.SetRaidKey then
+        local detectedKey = nil
+        if GetRealZoneText then
+            local zoneName = GetRealZoneText()
+            if zoneName and zoneName ~= "" then
+                local z = string.lower(zoneName)
+                if string.find(z, "molten core", 1, true) then
+                    detectedKey = "MC"
+                elseif string.find(z, "blackwing lair", 1, true) then
+                    detectedKey = "BWL"
+                elseif string.find(z, "ahn'qiraj", 1, true) or string.find(z, "ahnqiraj", 1, true) then
+                    detectedKey = "AQ40"
+                elseif string.find(z, "naxxramas", 1, true) then
+                    detectedKey = "NAXX"
+                end
+            end
+        end
+
+        local defaultKey = detectedKey or "MC"
+        local defaultLabel = nil
+        for _, raid in ipairs(RAID_OPTIONS) do
+            if raid.key == defaultKey then
+                defaultLabel = raid.label
+                break
+            end
+        end
+
+        MainFrame:SetRaidKey(defaultKey, defaultLabel or defaultKey)
+    end
+
+    -- Default event type
+    if MainFrame.SetEventType then
+        MainFrame:SetEventType("ITEM", "Item")
+    else
+        self.currentEventType = "ITEM"
+    end
 end
 
 -- Rebuild DKP Master panel so that permission changes (CanEditPublicNote)
@@ -439,6 +684,8 @@ function MainFrame:RefreshDKPMasterPanel()
     -- Clear references to old inputs
     self.valueBox = nil
     self.reasonBox = nil
+    self.raidButton = nil
+    self.currentRaidKey = nil
 
     -- Create a fresh panel based on current permissions
     self:CreateDKPMasterPanel()
@@ -834,8 +1081,80 @@ end
 
 -- Award DKP to selected players
 function MainFrame:AdjustDKP(valueStr, reason, isAward)
-    local value = tonumber(valueStr)
-    if not value or value <= 0 then
+    local uiValue = tonumber(valueStr)
+
+    -- Determinar tipo de evento seleccionado
+    local eventType = self.currentEventType or "ITEM"
+
+    -- Obtener valor de DKP final según el tipo de evento
+    local finalValue = nil
+    local finalReason = reason
+
+    -- Helper para obtener configuración de raid por guild
+    local function GetConfiguredRaidDKP(fieldKey)
+        if not DMA.Data or not DMA.Data.Database or not DMA.Data.Database.GetDB or not DMA.Data.Database.GetCurrentGuildKey then
+            return nil
+        end
+
+        local db = DMA.Data.Database:GetDB()
+        if not db or not db.guilds then return nil end
+
+        local guildKey = DMA.Data.Database:GetCurrentGuildKey()
+        if not guildKey or not db.guilds[guildKey] or not db.guilds[guildKey].config or not db.guilds[guildKey].config.raidDKP then
+            return nil
+        end
+
+        -- Priorizar raid seleccionada manualmente en el dropdown
+        local raidKey = self.currentRaidKey
+        if not raidKey then
+            -- Fallback: intentar detectar por nombre de zona actual
+            local zoneName = GetRealZoneText and GetRealZoneText() or nil
+            if zoneName and zoneName ~= "" then
+                local z = string.lower(zoneName)
+                if string.find(z, "molten core", 1, true) then
+                    raidKey = "MC"
+                elseif string.find(z, "blackwing lair", 1, true) then
+                    raidKey = "BWL"
+                elseif string.find(z, "ahn'qiraj", 1, true) or string.find(z, "ahnqiraj", 1, true) then
+                    raidKey = "AQ40"
+                elseif string.find(z, "naxxramas", 1, true) then
+                    raidKey = "NAXX"
+                end
+            end
+        end
+
+        if not raidKey then
+            return nil
+        end
+
+        local raidCfg = db.guilds[guildKey].config.raidDKP[raidKey]
+        if not raidCfg then
+            return nil
+        end
+
+        return raidCfg[fieldKey]
+    end
+
+    if eventType == "STAY" then
+        finalValue = GetConfiguredRaidDKP("stay")
+        finalReason = "Permanecer en raid"
+    elseif eventType == "EARLY" then
+        finalValue = GetConfiguredRaidDKP("early")
+        finalReason = "Llegar temprano"
+    elseif eventType == "BOSS" then
+        finalValue = GetConfiguredRaidDKP("bossKill")
+        if not finalReason or finalReason == "" then
+            finalReason = "Boss kill"
+        end
+    else
+        -- ITEM y PENALTY usan el valor introducido manualmente
+        finalValue = uiValue
+        if eventType == "ITEM" and (not finalReason or finalReason == "") then
+            finalReason = "Item comprado: "
+        end
+    end
+
+    if not finalValue or finalValue <= 0 then
         local msg = isAward and "Valor de DKP inválido para otorgar" or "Valor de DKP inválido para deducir"
         if DMA.Utils and DMA.Utils.Logger then
             DMA.Utils.Logger:Error(msg)
@@ -863,13 +1182,8 @@ function MainFrame:AdjustDKP(valueStr, reason, isAward)
         return
     end
 
-    local dkpValue = 0
-    if (isAward) then
-        dkpValue = value
-    else
-        dkpValue = -value
-    end
-    local eventReason = reason or (isAward and "Manual award" or "Manual deduction")
+    local dkpValue = isAward and finalValue or -finalValue
+    local eventReason = finalReason or (isAward and "Manual award" or "Manual deduction")
     local playerStr = ""
     for i, v in ipairs(selectedPlayers) do
         if i > 1 then playerStr = playerStr .. "," end
@@ -920,7 +1234,7 @@ function MainFrame:AdjustDKP(valueStr, reason, isAward)
 
             local msgFormat = isAward and "DMA: Otorgados %d DKP a %s (%s)" or "DMA: Reducidos %d DKP de %s (%s)"
             for _, playerName in ipairs(selectedPlayers) do
-                local msg = string.format(msgFormat, value, playerName, eventReason)
+                local msg = string.format(msgFormat, finalValue, playerName, eventReason)
                 if SendChatMessage and IsInGuild and IsInGuild() then
                     SendChatMessage(msg, "GUILD")
                 else
@@ -932,11 +1246,188 @@ function MainFrame:AdjustDKP(valueStr, reason, isAward)
                 end
             end
 
-            -- Clear form
-            self.valueBox:SetText("0")
-            self.reasonBox:SetText("")
-            self.valueBox:ClearFocus()
-            self.reasonBox:ClearFocus()
+            -- Clear form (según tipo de evento)
+            if self.valueBox then
+                self.valueBox:SetText("0")
+                self.valueBox:ClearFocus()
+            end
+
+            if self.reasonBox then
+                -- Para stay/early mantenemos el texto fijo; para el resto limpiamos
+                if eventType == "STAY" or eventType == "EARLY" then
+                    self.reasonBox:ClearFocus()
+                elseif eventType == "ITEM" then
+                    self.reasonBox:SetText("Item comprado: ")
+                    self.reasonBox:ClearFocus()
+                else
+                    self.reasonBox:SetText("")
+                    self.reasonBox:ClearFocus()
+                end
+            end
+        end
+    end
+end
+
+-- Actualiza el tipo de evento y la visibilidad/prefill de campos
+function MainFrame:SetEventType(eventKey, displayLabel)
+    self.currentEventType = eventKey
+
+    if self.eventTypeButton and self.eventTypeButton.text then
+        self.eventTypeButton.text:SetText(displayLabel or eventKey)
+    end
+
+    -- Helper para habilitar/deshabilitar campos visualmente
+    local function SetFieldEnabled(box, enabled)
+        if not box then return end
+        if enabled then
+            box:EnableMouse(true)
+            box:SetTextColor(1, 1, 1)
+        else
+            box:EnableMouse(false)
+            box:ClearFocus()
+            box:SetTextColor(0.6, 0.6, 0.6)
+        end
+    end
+
+    -- Helper para obtener el valor configurado de DKP para la raid actual
+    local function GetConfiguredRaidDKP(fieldKey)
+        if not DMA.Data or not DMA.Data.Database or not DMA.Data.Database.GetDB or not DMA.Data.Database.GetCurrentGuildKey then
+            return nil
+        end
+
+        local db = DMA.Data.Database:GetDB()
+        if not db or not db.guilds then return nil end
+
+        local guildKey = DMA.Data.Database:GetCurrentGuildKey()
+        if not guildKey or not db.guilds[guildKey] or not db.guilds[guildKey].config or not db.guilds[guildKey].config.raidDKP then
+            return nil
+        end
+
+        -- Priorizar raid seleccionada manualmente en el dropdown
+        local raidKey = self.currentRaidKey
+        if not raidKey then
+            -- Fallback: intentar detectar por nombre de zona actual
+            local zoneName = GetRealZoneText and GetRealZoneText() or nil
+            if zoneName and zoneName ~= "" then
+                local z = string.lower(zoneName)
+                if string.find(z, "molten core", 1, true) then
+                    raidKey = "MC"
+                elseif string.find(z, "blackwing lair", 1, true) then
+                    raidKey = "BWL"
+                elseif string.find(z, "ahn'qiraj", 1, true) or string.find(z, "ahnqiraj", 1, true) then
+                    raidKey = "AQ40"
+                elseif string.find(z, "naxxramas", 1, true) then
+                    raidKey = "NAXX"
+                end
+            end
+        end
+
+        if not raidKey then
+            return nil
+        end
+
+        local raidCfg = db.guilds[guildKey].config.raidDKP[raidKey]
+        if not raidCfg then
+            return nil
+        end
+
+        return raidCfg[fieldKey]
+    end
+
+    -- Siempre mostramos ambos campos; sólo cambiamos valores y editable/no editable
+    if eventKey == "STAY" then
+        local cfgVal = GetConfiguredRaidDKP("stay") or 0
+        if self.valueBox then
+            self.valueBox:SetText(tostring(cfgVal))
+        end
+        if self.reasonBox then
+            self.reasonBox:SetText("Permanecer en raid")
+        end
+        SetFieldEnabled(self.valueBox, false)
+        SetFieldEnabled(self.reasonBox, false)
+
+    elseif eventKey == "EARLY" then
+        local cfgVal = GetConfiguredRaidDKP("early") or 0
+        if self.valueBox then
+            self.valueBox:SetText(tostring(cfgVal))
+        end
+        if self.reasonBox then
+            self.reasonBox:SetText("Llegar temprano")
+        end
+        SetFieldEnabled(self.valueBox, false)
+        SetFieldEnabled(self.reasonBox, false)
+
+    elseif eventKey == "BOSS" then
+        local cfgVal = GetConfiguredRaidDKP("bossKill") or 0
+        if self.valueBox then
+            self.valueBox:SetText(tostring(cfgVal))
+        end
+        if self.reasonBox then
+            self.reasonBox:SetText("Boss kill: ")
+        end
+        SetFieldEnabled(self.valueBox, false)
+        SetFieldEnabled(self.reasonBox, true)
+
+    elseif eventKey == "ITEM" then
+        if self.valueBox then
+            -- Mantener el último valor tecleado, o 0 si vacío
+            local txt = self.valueBox:GetText() or ""
+            if txt == "" then
+                self.valueBox:SetText("0")
+            end
+        end
+        if self.reasonBox then
+            local prefix = "Item comprado: "
+            local current = self.reasonBox:GetText() or ""
+            if current == "" or string.sub(current, 1, string.len(prefix)) ~= prefix then
+                self.reasonBox:SetText(prefix)
+            end
+        end
+        SetFieldEnabled(self.valueBox, true)
+        SetFieldEnabled(self.reasonBox, true)
+
+    elseif eventKey == "PENALTY" then
+        if self.valueBox then
+            local txt = self.valueBox:GetText() or ""
+            if txt == "" then
+                self.valueBox:SetText("0")
+            end
+        end
+        if self.reasonBox then
+            local prefix = "Penalizador: "
+            local current = self.reasonBox:GetText() or ""
+            if current == "" or string.sub(current, 1, string.len(prefix)) ~= prefix then
+                self.reasonBox:SetText(prefix)
+            end
+        end
+        -- Razón libre para penalización; no forzamos texto
+        SetFieldEnabled(self.valueBox, true)
+        SetFieldEnabled(self.reasonBox, true)
+
+    else
+        -- Cualquier otro tipo desconocido: habilitar ambos sin tocar textos
+        SetFieldEnabled(self.valueBox, true)
+        SetFieldEnabled(self.reasonBox, true)
+    end
+end
+
+-- Actualiza la raid seleccionada (usada por los tipos STAY/EARLY/BOSS)
+function MainFrame:SetRaidKey(raidKey, displayLabel)
+    self.currentRaidKey = raidKey
+
+    if self.raidButton and self.raidButton.text then
+        self.raidButton.text:SetText(displayLabel or raidKey or "Select raid")
+    end
+
+    -- Si tenemos un tipo de evento que usa la config de raid, refrescar campos
+    local t = self.currentEventType
+    if t == "STAY" or t == "EARLY" or t == "BOSS" then
+        if self.SetEventType then
+            local label = nil
+            if self.eventTypeButton and self.eventTypeButton.text then
+                label = self.eventTypeButton.text:GetText()
+            end
+            self:SetEventType(t, label)
         end
     end
 end

@@ -25,8 +25,9 @@ local DEFAULT_DB = {
     history = {}
 }
 
+
 -- Obtiene una clave estable para la "identidad" de la hermandad/ personaje
-local function GetCurrentGuildKey()
+function DMA.Data.Database:GetCurrentGuildKey()
     local guildName = nil
     if GetGuildInfo then
         guildName = GetGuildInfo("player")
@@ -82,7 +83,7 @@ function DMA.Data.Database:Init()
     -- Aislar eventos y cache por hermandad/personaje.
     -- Se usa un contenedor DMA_DB.guilds[clave] con sus propias
     -- tablas events/cache/history.
-    local guildKey = GetCurrentGuildKey()
+    local guildKey = self:GetCurrentGuildKey()
 
     -- Inicializar contenedor de guilds sin borrar datos existentes
     if not DMA_DB.guilds then
@@ -108,14 +109,16 @@ function DMA.Data.Database:Init()
         DMA_DB.guilds[guildKey] = {
             events = {},
             cache = {},
-            history = {}
+            history = {},
+            config = {},
         }
     else
         -- Asegurar que las subtablas existen aunque sean de una versión anterior
         local g = DMA_DB.guilds[guildKey]
-        g.events = g.events or {}
-        g.cache  = g.cache  or {}
+        g.events  = g.events  or {}
+        g.cache   = g.cache   or {}
         g.history = g.history or {}
+        g.config  = g.config  or {}
     end
 
     -- Reasignar accesos directos globales a la hermandad actual
@@ -129,13 +132,14 @@ end
 function DMA.Data.Database:ClearCurrentGuildData()
     if not DMA_DB then return end
 
-    local guildKey = GetCurrentGuildKey()
+    local guildKey = self:GetCurrentGuildKey()
     DMA_DB.guilds = DMA_DB.guilds or {}
 
     DMA_DB.guilds[guildKey] = {
         events = {},
         cache = {},
-        history = {}
+        history = {},
+        config = {},
     }
 
     -- Reapuntar los accesos directos globales a la guild actual

@@ -18,5 +18,6 @@ Database\Database.lua
 Database\Cache.lua
 UI\MainFrame.lua
 UI\History.lua
+UI\DKPConfig.lua
 DMAMinimapButton.lua
 DMA.lua
