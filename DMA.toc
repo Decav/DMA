@@ -2,7 +2,7 @@
 ## Title: DMA - DKP Manager Addon
 ## Author: Decavi
 ## Notes: DKP Manager for Vanilla
-## Version: 1.0.0
+## Version: 1.0.1
 ## SavedVariables: DMA_DB
 
 Init.lua
