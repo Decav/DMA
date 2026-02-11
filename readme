@@ -1,102 +1,148 @@
-DMA - DKP Manager Addon for World of Warcraft Vanilla 1.12.1
-===========================================================
+# DMA - DKP Manager Addon para World of Warcraft Vanilla 1.12.x / Turtle WoW
 
-DESCRIPCIÓN
------------
-DMA es un addon completo para la gestión de DKP (Dragon Kill Points) en guilds de World of Warcraft Vanilla.
-Proporciona una interfaz intuitiva para que los DKP Masters puedan gestionar puntos, ver historiales y
-sincronizar datos entre miembros de la guild.
+## DESCRIPCIÓN
 
-CARACTERÍSTICAS PRINCIPALES
---------------------------
-- Gestión completa de DKP con eventos auditables
-- Interfaz gráfica intuitiva con lista de jugadores
-- Sistema de permisos para DKP Masters
-- Sincronización automática por chat de guild
-- Historial completo de transacciones
-- Datos persistentes entre sesiones
-- Sistema de logging integrado
+DMA es un addon de gestión de DKP (Dragon Kill Points) pensado para hermandades
+de WoW Vanilla/Turtle que usan **la nota pública de la hermandad como única
+fuente de verdad del DKP**. El addon proporciona una UI simple para
+otorgar/deducir DKP, aplicar decay periódico y revisar un historial auditable de
+cambios.
 
-COMANDOS DISPONIBLES
--------------------
-/dma o /dkp          - Alternar ventana principal
-/dma show           - Mostrar ventana principal
-/dma hide           - Ocultar ventana principal
-/dma reset          - Resetear posición de la ventana
-/dma history        - Mostrar/ocultar historial de eventos
-/dma stats          - Mostrar estadísticas de DKP
-/dma resetdata      - Recrear datos de prueba (solo para desarrollo)
-/dma loadguild      - Cargar miembros de la hermandad
+## CARACTERÍSTICAS PRINCIPALES
 
-CARGA DE JUGADORES
-------------------
-El addon automáticamente intenta cargar los miembros de tu hermandad al iniciar.
-Si no se cargan automáticamente, puedes usar:
-- Comando: /dma loadguild
-- Botón "Load Guild" en la interfaz principal
+- Nota pública de guild como fuente única de DKP (lectura/escritura automática).
+- Ajustes manuales de DKP (award / deduct) para uno o varios jugadores a la vez.
+- Sistema de **DKP Decay del 25%** (≥ 1 DKP, redondeo hacia arriba) aplicado
+  sobre toda la guild.
+- Historial de eventos DKP con motivo, valor, jugador(es) y autor del cambio.
+- Replicación de eventos entre jugadores con el addon mediante mensajes de addon
+  (PARTY/RAID), **sin depender de parsear el chat de guild**.
+- Permisos basados en `CanEditPublicNote`: solo quien puede editar notas
+  públicas actúa como DKP Master.
+- Datos (historial y cache) **aislados por hermandad/personaje** para no mezclar
+  guilds.
+- Botón para limpiar manualmente el historial y cache de la guild/personaje
+  actuales.
+- UI optimizada para hermandades grandes (varios cientos de miembros) con lista
+  scrollable reutilizando filas.
 
-Si no estás en una hermandad o no hay miembros, se crearán datos de prueba automáticamente.
+## INTERFAZ DE USUARIO
 
-COMPATIBILIDAD WoW VANILLA 1.12.1
----------------------------------
-- Usa GetGuildInfo() en lugar de UnitInGuild() para compatibilidad
-- Reemplaza string.gmatch() con split manual usando string.find/string.sub
-- Reemplaza strtrim() con string.gsub() para trimming
-- Verifica disponibilidad de funciones de guild antes de usarlas
-- Maneja errores de funciones no disponibles
-- Compatible con formato de nombres de personajes con realm
-- Usa funciones básicas de Lua/string disponibles en Vanilla
+- Ventana principal (`/dma`):
+  - Panel izquierdo: lista de jugadores con filtro por nombre y contador
+    `Players: N`.
+  - Panel derecho (DKP Master Panel): selección de jugadores, entrada de valor
+    DKP y motivo, botones **Award DKP / Deduct DKP** y botón de **Apply 25% DKP
+    Decay**.
+  - Indicador de estado de raid (miembros y nombre de la zona/raid actual) para
+    referencia rápida.
+- Ventana de historial:
+  - Lista de eventos DKP recientes, expandiendo eventos multi-jugador en varias
+    filas.
+  - Motivos visibles con truncado suave para textos largos.
+  - Botón **Clear** para vaciar historial y cache de la guild/personaje
+    actuales.
 
-INSTALACIÓN
------------
-1. Copia la carpeta "DMA" en tu directorio Interface/AddOns/
-2. Reinicia WoW o ejecuta /reload
-3. El addon se cargará automáticamente
+## COMANDOS DISPONIBLES
 
-PRIMER USO
-----------
-1. Al cargar por primera vez, se crearán datos de prueba automáticamente
-2. Usa /dma para abrir la interfaz principal
-3. Si eres DKP Master, podrás gestionar puntos de otros jugadores
-4. Los cambios se sincronizan automáticamente con la guild
+/dma - Alternar ventana principal. /dkp - Alias de /dma. /dma history -
+Mostrar/ocultar la ventana de historial.
 
-ARCHIVOS DEL PROYECTO
---------------------
-DMA.toc              - Archivo de configuración del addon
-DMA.lua              - Comandos slash y configuración inicial
-Init.lua             - Inicialización central del addon
-Constants.lua        - Constantes del sistema
-Logger.lua           - Sistema de logging
-Utils.lua            - Utilidades generales
-Events.lua           - Registro de eventos de WoW
-Permissions.lua      - Gestión de permisos DKP Master
-Comm.lua             - Comunicación por chat de guild
-Database.lua         - Gestión de SavedVariables
-EventManager.lua     - Creación y validación de eventos DKP
-Cache.lua            - Cálculo de DKP actual de jugadores
-MainFrame.lua        - Interfaz principal con lista de jugadores
-DKPMaster.lua        - Panel de administración DKP
-History.lua          - Interfaz de historial de eventos
-test.lua             - Script de pruebas (ejecutar con /run)
+Otros comandos de desarrollo heredados (como `/dma resetdata`, `/dma loadguild`,
+etc.) pueden existir pero no forman parte del flujo normal de uso y pueden
+cambiar o desaparecer.
 
-DESARROLLO
-----------
-Para desarrollo y testing:
-- Ejecuta /run con el contenido de test.lua para verificar módulos
-- Usa /dma resetdata para recrear datos de prueba
-- Revisa logs en el chat para debugging
+## FUENTE DE DATOS (NOTAS PÚBLICAS)
 
-NOTAS TÉCNICAS
--------------
-- Compatible con WoW Vanilla 1.12.1
-- Usa SavedVariables para persistencia
-- Eventos inmutables con IDs únicos
-- Sistema modular para fácil mantenimiento
-- Fallback a funciones nativas si módulos fallan
+- El DKP **se lee y escribe exclusivamente** en la nota pública de la hermandad.
+- El caché interno y el historial sirven como capa de auditoría y
+  reconstrucción, pero la verdad absoluta es siempre la nota pública.
+- Antes de aplicar ajustes/decay, el addon sincroniza los valores desde las
+  notas para evitar trabajar con datos obsoletos.
 
-SOPORTE
--------
-Para reportar bugs o solicitar features, contacta al desarrollador.
-9. Manejo de Errores: Implementa un manejo de errores robusto para mejorar la estabilidad del addon.
-10. Actualizaciones: Mantente al día con las actualizaciones de la API de WoW
-    para asegurar la compatibilidad continua del addon.
+## SINCRONIZACIÓN ENTRE JUGADORES
+
+- Los eventos DKP se envían como mensajes de addon (`SendAddonMessage`) con
+  prefijo propio.
+- Solo se usan canales PARTY/RAID (no se parsean mensajes visibles en /g), lo
+  que evita spoof de historial.
+- Cada evento tiene un ID único y la base de datos es idempotente: recibir el
+  mismo evento dos veces no lo duplica en el historial.
+
+## ALCANCE DE DATOS POR GUILD/PJ
+
+- Las SavedVariables se organizan por clave:
+  - `GUILD:<NombreHermandad>` cuando estás en una guild.
+  - `CHAR:<Nombre>-<Reino>` cuando no estás en guild.
+- Cada clave tiene sus propias tablas `events`, `cache` e `history`, de forma
+  que:
+  - Cambiar de personaje o de guild **no mezcla datos**.
+  - El botón **Clear** de la ventana de historial solo afecta a la
+    guild/personaje actual.
+
+## COMPATIBILIDAD WoW VANILLA 1.12.x / TURTLE
+
+- Usa APIs y patrones compatibles con 1.12 (por ejemplo, `event`, `arg1..arg4`
+  en handlers).
+- Evita funciones modernas de Lua no presentes en Vanilla.
+- Gestiona nombres con `Nombre-Reino` recortando el sufijo de reino cuando es
+  necesario.
+
+## INSTALACIÓN
+
+1. Copia la carpeta `DMA` en `Interface/AddOns/`.
+2. Abre el juego y ejecuta `/reload` (o reinicia el cliente).
+3. Verás en el chat: `DMA: Addon cargado - usa /dma para abrir la ventana`.
+
+## PRIMEROS PASOS
+
+1. Asegúrate de que tienes permisos para editar la **nota pública** de la
+   hermandad si vas a ser DKP Master.
+2. Usa `/dma` para abrir la ventana principal.
+3. En el panel derecho (DKP Master Panel):
+   - Usa **Select All / None / Raid** para seleccionar jugadores.
+   - Introduce un valor en `DKP Value` y un `Reason`.
+   - Pulsa **Award DKP** o **Deduct DKP**.
+4. Para aplicar decay mensual o puntual, usa el botón **Apply 25% DKP Decay**.
+5. Abre el historial con `/dma history` o con el botón **History** del frame
+   principal.
+
+## ESTRUCTURA DEL PROYECTO (RESUMEN)
+
+- DMA.toc - Archivo de configuración del addon.
+- Init.lua - Inicialización central, registro de eventos y bootstrap de módulos.
+- DMA.lua - Comandos slash y lógica de entrada/salida principal.
+- Core\Comm.lua - Mensajes de addon para replicar eventos DKP.
+- Core\Events.lua - Registro de eventos de WoW relevantes.
+- Core\Permissions.lua - Gestión de permisos (detección de DKP Master via
+  CanEditPublicNote).
+- Core\EventManager.lua- Creación y validación de eventos DKP.
+- Core\DKPDecay.lua - Lógica de DKP Decay del 25%.
+- Core\DKPMaster.lua - Lógica de alto nivel del panel DKP Master (si aplica).
+- Database\Database.lua- Gestión de SavedVariables y aislamiento por
+  guild/personaje.
+- Database\Cache.lua - Cache de DKP, reconstrucción desde eventos y
+  sincronización con notas.
+- UI\MainFrame.lua - Interfaz principal con lista de jugadores y panel DKP
+  Master.
+- UI\History.lua - Interfaz de historial de eventos DKP.
+- Utils\Constants.lua - Constantes del sistema.
+- Utils\Logger.lua - Sistema de logging básico.
+- Utils\Utils.lua - Utilidades generales.
+- test.lua - Script de pruebas internas (si se usa durante desarrollo).
+
+## DESARROLLO Y DEBUG
+
+- El logger interno puede configurarse para mostrar más o menos detalle en el
+  chat.
+- Existen comandos y scripts de pruebas pensados para desarrollo; no se
+  garantiza su estabilidad en entornos de producción.
+
+## SOPORTE
+
+Para reportar bugs o sugerencias, contacta con el desarrollador (Decavi)
+indicando:
+
+- Versión de cliente (Vanilla 1.12.x / Turtle).
+- Pasos para reproducir el problema.
+- Errores Lua (si los hay) y contexto (raid, ciudad, etc.).
