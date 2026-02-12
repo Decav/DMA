@@ -21,17 +21,18 @@ DMA_DB = DMA_DB or {
     config = {
         historyRetentionDays = 365
     },
-    events = {},
-    cache = {},
     settings = {
         master = UnitName("player"),
         enabled = true
     }
 }
 
--- Event handler for VARIABLES_LOADED
+
+-- Event handler: inicialización principal. Usamos la variable global
+-- 'event' (estilo clásico de WoW 1.12/Turtle) para garantizar que se
+-- detecta correctamente PLAYER_LOGIN en este cliente.
 DMAParent:SetScript("OnEvent", function()
-    if event == "VARIABLES_LOADED" then
+    if event == "PLAYER_LOGIN" then
         -- Initialize core modules
         if DMA.Core then
             -- Initialize database first
@@ -87,5 +88,6 @@ DMAParent:SetScript("OnEvent", function()
     end
 end)
 
--- Register the event
-DMAParent:RegisterEvent("VARIABLES_LOADED")
+-- Registrar evento de login en lugar de VARIABLES_LOADED para que la
+-- base de datos se inicialice cuando el jugador ya está completamente cargado.
+DMAParent:RegisterEvent("PLAYER_LOGIN")

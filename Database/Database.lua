@@ -15,14 +15,7 @@ local DEFAULT_DB = {
 
     config = {
         historyRetentionDays = 365
-    },
-
-    events = {},
-
-    cache = {},
-
-    -- Historial textual de eventos DKP
-    history = {}
+    }
 }
 
 
@@ -153,6 +146,22 @@ function DMA.Data.Database:GetDB()
 end
 
 function DMA.Data.Database:ApplyEvent(event)
+    if not DMA_DB then
+        DMA_DB = DeepCopy(DEFAULT_DB)
+    end
+
+    -- Asegurarnos de trabajar siempre sobre el bucket de la guild/char actual
+    local guildKey = self:GetCurrentGuildKey()
+    DMA_DB.guilds = DMA_DB.guilds or {}
+    DMA_DB.guilds[guildKey] = DMA_DB.guilds[guildKey] or {
+        events  = {},
+        cache   = {},
+        history = {},
+        config  = {},
+    }
+    local bucket = DMA_DB.guilds[guildKey]
+    bucket.cache = bucket.cache or {}
+
     -- Parse players string manually for WoW Vanilla compatibility
     local start = 1
     local delimiter = ","
@@ -169,10 +178,10 @@ function DMA.Data.Database:ApplyEvent(event)
 
         player = string.gsub(player, "^%s*(.-)%s*$", "%1")
         if player ~= "" then
-            if not DMA_DB.cache[player] then
-                DMA_DB.cache[player] = 0
+            if not bucket.cache[player] then
+                bucket.cache[player] = 0
             end
-            DMA_DB.cache[player] = DMA_DB.cache[player] + event.value
+            bucket.cache[player] = bucket.cache[player] + event.value
         end
 
         if not pos then break end
@@ -180,20 +189,36 @@ function DMA.Data.Database:ApplyEvent(event)
 end
 
 function DMA.Data.Database:AddEvent(event)
+    if not DMA_DB then
+        DMA_DB = DeepCopy(DEFAULT_DB)
+    end
+
+    local guildKey = self:GetCurrentGuildKey()
+    DMA_DB.guilds = DMA_DB.guilds or {}
+    DMA_DB.guilds[guildKey] = DMA_DB.guilds[guildKey] or {
+        events  = {},
+        cache   = {},
+        history = {},
+        config  = {},
+    }
+    local bucket = DMA_DB.guilds[guildKey]
+    bucket.events  = bucket.events  or {}
+    bucket.history = bucket.history or {}
+
     local eventId = GenerateEventId(event)
     -- Evitar duplicar eventos si ya existen (por ejemplo, eventos replicados por red)
-    if DMA_DB.events[eventId] then
+    if bucket.events[eventId] then
         return eventId
     end
 
     event.id = eventId
 
-    DMA_DB.events[eventId] = event
+    bucket.events[eventId] = event
     self:ApplyEvent(event)
 
     -- Registrar una entrada de historial legible en SavedVariables
-    if not DMA_DB.history then
-        DMA_DB.history = {}
+    if not bucket.history then
+        bucket.history = {}
     end
 
     local amount = event.value or 0
@@ -217,7 +242,7 @@ function DMA.Data.Database:AddEvent(event)
         summary = string.format("%s %s %d DKP a %s", master, action, absAmount, players)
     end
 
-    table.insert(DMA_DB.history, {
+    table.insert(bucket.history, {
         time = event.time or time(),
         text = summary,
         id = eventId
@@ -233,15 +258,30 @@ function DMA.Data.Database:ReplicateEvent(event)
 end
 
 function DMA.Data.Database:GetDKP(playerName)
-    return DMA_DB.cache[playerName] or 0
+    if not DMA_DB then return 0 end
+
+    local guildKey = self:GetCurrentGuildKey()
+    if not DMA_DB.guilds or not DMA_DB.guilds[guildKey] or not DMA_DB.guilds[guildKey].cache then
+        return 0
+    end
+
+    return DMA_DB.guilds[guildKey].cache[playerName] or 0
 end
 
 function DMA.Data.Database:CleanupHistory()
+    if not DMA_DB or not DMA_DB.config then return end
+
     local cutoff = time() - (DMA_DB.config.historyRetentionDays * 86400)
 
-    for id, event in pairs(DMA_DB.events) do
+    local guildKey = self:GetCurrentGuildKey()
+    if not DMA_DB.guilds or not DMA_DB.guilds[guildKey] or not DMA_DB.guilds[guildKey].events then
+        return
+    end
+
+    local events = DMA_DB.guilds[guildKey].events
+    for id, event in pairs(events) do
         if event.time < cutoff then
-            DMA_DB.events[id] = nil
+            events[id] = nil
         end
     end
 end

@@ -663,11 +663,11 @@ function MainFrame:CreateDKPMasterPanel()
         MainFrame:SetRaidKey(defaultKey, defaultLabel or defaultKey)
     end
 
-    -- Default event type
+    -- Default event type: Stay in raid
     if MainFrame.SetEventType then
-        MainFrame:SetEventType("ITEM", "Item")
+        MainFrame:SetEventType("STAY", "Stay in raid")
     else
-        self.currentEventType = "ITEM"
+        self.currentEventType = "STAY"
     end
 end
 
@@ -1241,28 +1241,19 @@ function MainFrame:AdjustDKP(valueStr, reason, isAward)
                     DEFAULT_CHAT_FRAME:AddMessage(msg)
                 end
                 -- Actualizar nota pública solo al otorgar o reducir DKP manualmente
-                if DMA.Data and DMA.Data.Cache and DMA.Data.Cache.UpdatePlayerPublicNote then
-                    DMA.Data.Cache.UpdatePlayerPublicNote(playerName, DMA_DB.cache[playerName] or 0)
+                if DMA.Data and DMA.Data.Database and DMA.Data.Database.GetDKP and DMA.Data.Cache and DMA.Data.Cache.UpdatePlayerPublicNote then
+                    local currentDKP = DMA.Data.Database:GetDKP(playerName) or 0
+                    DMA.Data.Cache.UpdatePlayerPublicNote(playerName, currentDKP)
                 end
             end
 
-            -- Clear form (según tipo de evento)
+            -- No limpiamos los campos de valor ni razón aquí; quedan
+            -- controlados por el tipo de evento (SetEventType) y por el usuario.
             if self.valueBox then
-                self.valueBox:SetText("0")
                 self.valueBox:ClearFocus()
             end
-
             if self.reasonBox then
-                -- Para stay/early mantenemos el texto fijo; para el resto limpiamos
-                if eventType == "STAY" or eventType == "EARLY" then
-                    self.reasonBox:ClearFocus()
-                elseif eventType == "ITEM" then
-                    self.reasonBox:SetText("Item comprado: ")
-                    self.reasonBox:ClearFocus()
-                else
-                    self.reasonBox:SetText("")
-                    self.reasonBox:ClearFocus()
-                end
+                self.reasonBox:ClearFocus()
             end
         end
     end

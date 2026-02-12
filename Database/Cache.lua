@@ -359,6 +359,13 @@ function Cache:SyncPlayersFromPublicNote(playerList)
         return
     end
 
+    -- Asegurar que la tabla de cache existe (puede no estar inicializada
+    -- aún si Database:Init/Cache:Init no se han ejecutado por timing).
+    if not DMA_DB then
+        return
+    end
+    DMA_DB.cache = DMA_DB.cache or {}
+
     -- Crear un set con los nombres que queremos sincronizar
     local wanted = {}
     for _, name in ipairs(playerList) do

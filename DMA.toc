@@ -12,8 +12,8 @@ Utils\Utils.lua
 Core\Comm.lua
 Core\Events.lua
 Core\Permissions.lua
-Core\EventManager.lua
 Core\DKPDecay.lua
+Database\EventManager.lua
 Database\Database.lua
 Database\Cache.lua
 UI\MainFrame.lua

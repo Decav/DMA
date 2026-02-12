@@ -12,6 +12,24 @@ local EventManager = DMA.Data.EventManager
 -- Event types constants
 EventManager.EVENT_TYPES = DMA.Utils.Constants.EVENT_TYPES
 
+-- Helper interno para obtener la tabla de eventos de la guild/char actual
+local function GetCurrentEventsTable()
+    if not DMA or not DMA.Data or not DMA.Data.Database or
+       not DMA.Data.Database.GetDB or not DMA.Data.Database.GetCurrentGuildKey then
+        return nil
+    end
+
+    local db = DMA.Data.Database:GetDB()
+    if not db or not db.guilds then return nil end
+
+    local guildKey = DMA.Data.Database:GetCurrentGuildKey()
+    if not guildKey or not db.guilds[guildKey] then return nil end
+
+    local bucket = db.guilds[guildKey]
+    bucket.events = bucket.events or {}
+    return bucket.events
+end
+
 -- Create a new DKP event
 function EventManager:CreateEvent(eventType, players, value, reason, master)
     if not eventType or not players or not value or not master then
@@ -127,17 +145,10 @@ function EventManager:ProcessIncomingEvent(event, sender)
         return false
     end
 
-    -- Check if event already exists
-    if DMA_DB.events[event.id] then
-        return true -- Already processed, ignore
-    end
-
-    -- Store event
-    DMA_DB.events[event.id] = event
-
-    -- Apply to cache
-    if DMA.Data.Cache then
-        DMA.Data.Cache:ApplyEvent(event)
+    -- Delega el almacenamiento en el módulo Database, que ya se encarga
+    -- de usar el bucket correcto por guild/char y evitar duplicados.
+    if DMA.Data and DMA.Data.Database and DMA.Data.Database.ReplicateEvent then
+        DMA.Data.Database:ReplicateEvent(event)
     end
 
     DEFAULT_CHAT_FRAME:AddMessage("DMA: Processed event", event.id, "from", sender)
@@ -147,8 +158,12 @@ end
 -- Get events for a specific player
 function EventManager:GetPlayerEvents(playerName)
     local playerEvents = {}
+    local events = GetCurrentEventsTable()
+    if not events then
+        return playerEvents
+    end
 
-    for eventId, event in pairs(DMA_DB.events) do
+    for eventId, event in pairs(events) do
         if string.find(event.players, playerName) then
             table.insert(playerEvents, event)
         end
@@ -165,8 +180,11 @@ function EventManager:GetRecentEvents(limit)
     limit = limit or 50
 
     local events = {}
-    for eventId, event in pairs(DMA_DB.events) do
-        table.insert(events, event)
+    local source = GetCurrentEventsTable()
+    if source then
+        for eventId, event in pairs(source) do
+            table.insert(events, event)
+        end
     end
 
     -- Sort by timestamp (newest first)
@@ -187,9 +205,12 @@ end
 function EventManager:GetEventsByType(eventType)
     local filteredEvents = {}
 
-    for eventId, event in pairs(DMA_DB.events) do
-        if event.type == eventType then
-            table.insert(filteredEvents, event)
+    local events = GetCurrentEventsTable()
+    if events then
+        for eventId, event in pairs(events) do
+            if event.type == eventType then
+                table.insert(filteredEvents, event)
+            end
         end
     end
 

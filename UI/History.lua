@@ -276,11 +276,9 @@ function History:Refresh()
     -- Get events based on filters
     local events = self:GetFilteredEvents()
 
-    -- Create entries
+    -- Create entries (una por jugador/evento filtrado)
     local yOffset = 0
-    for i, event in ipairs(events) do
-        if i > 50 then break end -- Limit to prevent UI lag
-
+    for _, event in ipairs(events) do
         local entry = self:CreateEntry(event, yOffset)
         table.insert(self.entries, entry)
         yOffset = yOffset - ENTRY_HEIGHT

@@ -18,7 +18,7 @@ function MinimapButton:Init()
 	button:SetWidth(32)
 	button:SetHeight(32)
 
-	-- Posición por defecto: esquina inferior izquierda del minimapa
+	-- Posición por defecto: esquina superior izquierda del minimapa
 	button:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 0, 0)
 
 	button:SetFrameStrata("MEDIUM")
