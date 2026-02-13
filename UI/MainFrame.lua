@@ -270,17 +270,17 @@ function MainFrame:CreateDKPMasterPanel()
     local canEdit = (CanEditPublicNote and CanEditPublicNote()) or 0
     local isMaster = (canEdit == 1)
 
-    --if not isMaster then
-    --    local noAccessText = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    --    noAccessText:SetPoint("CENTER", panelFrame, "CENTER", 0, 0)
-    --    if canEdit == 0 then
-    --        noAccessText:SetText("You are not a DKP Master")
-    --    else
-    --        -- Información de guild aún no disponible (canEdit nil)
-    --        noAccessText:SetText("Guild info not ready. Please open again in a few seconds or /reload.")
-    --    end
-    --    return
-    --end
+    if not isMaster then
+        local noAccessText = panelFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        noAccessText:SetPoint("CENTER", panelFrame, "CENTER", 0, 0)
+        if canEdit == 0 then
+            noAccessText:SetText("You are not a DKP Master")
+        else
+            -- Información de guild aún no disponible (canEdit nil)
+            noAccessText:SetText("Guild info not ready. Please open again in a few seconds or /reload.")
+        end
+        return
+    end
 
     local bgr = {0.2,0.2,0.2,1}
     local bdr = {0.2,0.2,0.2,1}
