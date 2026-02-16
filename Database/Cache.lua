@@ -11,27 +11,69 @@ local Cache = DMA.Data.Cache
 
 -- Initialize cache
 function Cache:Init()
-    if not DMA_DB.cache then
-        DMA_DB.cache = {}
+    if not DMA_DB then
+        return
     end
 
-    -- Create test data if no events exist and cache is empty
-    if not DMA_DB.events or self:GetPlayerCount() == 0 then
-        self:CreateTestData()
-    else
-        -- Rebuild cache from existing events
+    -- Obtener la tabla de eventos de la guild actual desde Database
+    if not DMA.Data or not DMA.Data.Database or
+       not DMA.Data.Database.GetDB or not DMA.Data.Database.GetCurrentGuildKey then
+        return
+    end
+
+    local db = DMA.Data.Database:GetDB()
+    if not db or not db.guilds then
+        return
+    end
+
+    local guildKey = DMA.Data.Database:GetCurrentGuildKey()
+    if not guildKey or not db.guilds[guildKey] then
+        return
+    end
+
+    local bucket = db.guilds[guildKey]
+    bucket.cache  = bucket.cache  or {}
+    bucket.events = bucket.events or {}
+
+    -- Hacer que DMA_DB.cache apunte al cache de la guild actual para
+    -- mantener compatibilidad con funciones que lo usan directamente.
+    DMA_DB.cache = bucket.cache
+
+    -- Si hay eventos en la hermandad actual, reconstruimos el cache
+    -- a partir de ellos. No se crea ningún dato de prueba.
+    if next(bucket.events) ~= nil then
         self:Rebuild()
     end
 end
 
 -- Rebuild entire cache from events
 function Cache:Rebuild()
+    if not DMA.Data or not DMA.Data.Database or
+       not DMA.Data.Database.GetDB or not DMA.Data.Database.GetCurrentGuildKey then
+        return
+    end
+
+    local db = DMA.Data.Database:GetDB()
+    if not db or not db.guilds then
+        return
+    end
+
+    local guildKey = DMA.Data.Database:GetCurrentGuildKey()
+    if not guildKey or not db.guilds[guildKey] then
+        return
+    end
+
+    local bucket = db.guilds[guildKey]
+    bucket.cache  = bucket.cache  or {}
+    bucket.events = bucket.events or {}
+
     -- Clear current cache
-    DMA_DB.cache = {}
+    bucket.cache = {}
+    DMA_DB.cache = bucket.cache
 
     -- Process all events in chronological order
     local events = {}
-    for eventId, event in pairs(DMA_DB.events) do
+    for eventId, event in pairs(bucket.events) do
         table.insert(events, event)
     end
 
@@ -219,64 +261,6 @@ end
 function Cache:Clear()
     DMA_DB.cache = {}
     DEFAULT_CHAT_FRAME:AddMessage("DMA: DKP cache cleared")
-end
-
--- Create test data for development/demo purposes
-function Cache:CreateTestData()
-    DEFAULT_CHAT_FRAME:AddMessage("DMA: Creating test DKP data...")
-
-    -- Verify required modules are available
-    if not DMA.Data or not DMA.Data.EventManager or not DMA.Data.Database then
-        DEFAULT_CHAT_FRAME:AddMessage("DMA: Required modules not available for test data creation")
-        return
-    end
-
-    -- Try to load guild members first
-    local guildName = GetGuildInfo("player")
-    if guildName then
-        GuildRoster()
-        self:DelayedLoadGuildMembers()
-    end
-
-    -- If no guild members loaded, create test data
-    if self:GetPlayerCount() == 0 then
-        local testPlayers = {
-            {name = "PlayerOne", dkp = 150},
-            {name = "PlayerTwo", dkp = 120},
-            {name = "PlayerThree", dkp = 95},
-            {name = "PlayerFour", dkp = 80},
-            {name = "PlayerFive", dkp = 65},
-            {name = "PlayerSix", dkp = 45},
-            {name = "PlayerSeven", dkp = 30},
-            {name = "PlayerEight", dkp = 15},
-            {name = "PlayerNine", dkp = 5},
-            {name = "PlayerTen", dkp = 0}
-        }
-
-        -- Create events for each test player
-        for _, player in ipairs(testPlayers) do
-            local event = DMA.Data.EventManager:CreateEvent(
-                "manual_adjust",
-                player.name,
-                player.dkp,
-                "Initial DKP setup",
-                "System"
-            )
-
-            if event then
-                DMA.Data.Database:AddEvent(event)
-            else
-                DEFAULT_CHAT_FRAME:AddMessage("DMA: Failed to create event for", player.name)
-            end
-        end
-
-        -- Rebuild cache after creating test events
-        self:Rebuild()
-
-        DEFAULT_CHAT_FRAME:AddMessage("DMA: Test data created with", table.getn(testPlayers), "players")
-    else
-        DEFAULT_CHAT_FRAME:AddMessage("DMA: Guild members loaded with", self:GetPlayerCount(), "players")
-    end
 end
 
 -- Load guild members and initialize their DKP to 0

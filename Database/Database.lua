@@ -26,17 +26,14 @@ function DMA.Data.Database:GetCurrentGuildKey()
         guildName = GetGuildInfo("player")
     end
 
+    -- Solo trabajamos con datos a nivel de hermandad.
+    -- Si el personaje no está en una hermandad, no devolvemos
+    -- ninguna clave (evita crear buckets "CHAR:" en DMA_DB.guilds).
     if guildName and guildName ~= "" then
         return "GUILD:" .. guildName
     end
 
-    local playerName = UnitName and UnitName("player") or "UNKNOWN"
-    local realmName = GetRealmName and GetRealmName() or ""
-    if realmName ~= "" then
-        return "CHAR:" .. playerName .. "-" .. realmName
-    else
-        return "CHAR:" .. playerName
-    end
+    return nil
 end
 
 local function DeepCopy(src, dest)
@@ -73,10 +70,26 @@ function DMA.Data.Database:Init()
         end
     end
 
+    -- Eliminar buckets antiguos a nivel de personaje ("CHAR:") que ya
+    -- no deben existir en la estructura de datos.
+    if DMA_DB.guilds then
+        for key, _ in pairs(DMA_DB.guilds) do
+            if type(key) == "string" and string.sub(key, 1, 5) == "CHAR:" then
+                DMA_DB.guilds[key] = nil
+            end
+        end
+    end
+
     -- Aislar eventos y cache por hermandad/personaje.
     -- Se usa un contenedor DMA_DB.guilds[clave] con sus propias
     -- tablas events/cache/history.
     local guildKey = self:GetCurrentGuildKey()
+
+    -- Si no hay hermandad (personaje sin guild), no inicializamos
+    -- ningún bucket de datos de DKP.
+    if not guildKey then
+        return
+    end
 
     -- Inicializar contenedor de guilds sin borrar datos existentes
     if not DMA_DB.guilds then
@@ -98,6 +111,11 @@ function DMA.Data.Database:Init()
         end
     end
 
+    -- A partir de aquí, todos los datos de eventos/historial viven en
+    -- DMA_DB.guilds[guildKey].*; las claves globales ya no se usan.
+    DMA_DB.events  = nil
+    DMA_DB.history = nil
+
     if not DMA_DB.guilds[guildKey] then
         DMA_DB.guilds[guildKey] = {
             events = {},
@@ -114,11 +132,10 @@ function DMA.Data.Database:Init()
         g.config  = g.config  or {}
     end
 
-    -- Reasignar accesos directos globales a la hermandad actual
+    -- Reasignar acceso directo global solo para cache, manteniendo
+    -- events/history únicamente dentro de DMA_DB.guilds[guildKey].
     local current = DMA_DB.guilds[guildKey]
-    DMA_DB.events  = current.events
-    DMA_DB.cache   = current.cache
-    DMA_DB.history = current.history
+    DMA_DB.cache = current.cache
 end
 
 -- Limpia todos los datos (eventos, cache, historial) de la guild/personaje actual
@@ -126,6 +143,7 @@ function DMA.Data.Database:ClearCurrentGuildData()
     if not DMA_DB then return end
 
     local guildKey = self:GetCurrentGuildKey()
+    if not guildKey then return end
     DMA_DB.guilds = DMA_DB.guilds or {}
 
     DMA_DB.guilds[guildKey] = {
@@ -135,10 +153,8 @@ function DMA.Data.Database:ClearCurrentGuildData()
         config = {},
     }
 
-    -- Reapuntar los accesos directos globales a la guild actual
-    DMA_DB.events  = DMA_DB.guilds[guildKey].events
-    DMA_DB.cache   = DMA_DB.guilds[guildKey].cache
-    DMA_DB.history = DMA_DB.guilds[guildKey].history
+    -- Reapuntar el acceso directo global de cache a la guild actual
+    DMA_DB.cache = DMA_DB.guilds[guildKey].cache
 end
 
 function DMA.Data.Database:GetDB()
@@ -152,6 +168,10 @@ function DMA.Data.Database:ApplyEvent(event)
 
     -- Asegurarnos de trabajar siempre sobre el bucket de la guild/char actual
     local guildKey = self:GetCurrentGuildKey()
+    if not guildKey then
+        -- Personaje sin hermandad: no aplicamos eventos de DKP
+        return
+    end
     DMA_DB.guilds = DMA_DB.guilds or {}
     DMA_DB.guilds[guildKey] = DMA_DB.guilds[guildKey] or {
         events  = {},
@@ -194,6 +214,10 @@ function DMA.Data.Database:AddEvent(event)
     end
 
     local guildKey = self:GetCurrentGuildKey()
+    if not guildKey then
+        -- Personaje sin hermandad: no registramos eventos de DKP
+        return nil
+    end
     DMA_DB.guilds = DMA_DB.guilds or {}
     DMA_DB.guilds[guildKey] = DMA_DB.guilds[guildKey] or {
         events  = {},
@@ -261,7 +285,7 @@ function DMA.Data.Database:GetDKP(playerName)
     if not DMA_DB then return 0 end
 
     local guildKey = self:GetCurrentGuildKey()
-    if not DMA_DB.guilds or not DMA_DB.guilds[guildKey] or not DMA_DB.guilds[guildKey].cache then
+    if not guildKey or not DMA_DB.guilds or not DMA_DB.guilds[guildKey] or not DMA_DB.guilds[guildKey].cache then
         return 0
     end
 
@@ -274,7 +298,7 @@ function DMA.Data.Database:CleanupHistory()
     local cutoff = time() - (DMA_DB.config.historyRetentionDays * 86400)
 
     local guildKey = self:GetCurrentGuildKey()
-    if not DMA_DB.guilds or not DMA_DB.guilds[guildKey] or not DMA_DB.guilds[guildKey].events then
+    if not guildKey or not DMA_DB.guilds or not DMA_DB.guilds[guildKey] or not DMA_DB.guilds[guildKey].events then
         return
     end
 

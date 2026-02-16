@@ -629,6 +629,11 @@ function MainFrame:CreateDKPMasterPanel()
     self.reasonBox = reasonBox
     self.eventTypeButton = typeButton
 
+    -- Guardar referencias a los botones de acción para poder
+    -- mostrarlos/ocultarlos según el tipo de evento seleccionado.
+    self.awardButton = awardBtn
+    self.deductButton = deductBtn
+
     self.raidLabel = raidLabel
     self.raidButton = raidButton
 
@@ -1265,6 +1270,47 @@ function MainFrame:SetEventType(eventKey, displayLabel)
 
     if self.eventTypeButton and self.eventTypeButton.text then
         self.eventTypeButton.text:SetText(displayLabel or eventKey)
+    end
+
+    -- Mostrar/ocultar y reanclar botones de Award/Deduct según el tipo de evento.
+    -- STAY, EARLY, BOSS: sólo Award, ocupando todo el ancho; ITEM y PENALTY:
+    -- sólo Deduct, ocupando todo el ancho. Si el tipo es desconocido, se
+    -- muestran ambos en el layout original.
+    if self.awardButton and self.deductButton and self.reasonBox then
+        local fullWidth = 276 -- mismo ancho que el botón de decay
+
+        if eventKey == "STAY" or eventKey == "EARLY" or eventKey == "BOSS" then
+            -- Sólo Award: ancho completo, anclado bajo Reason
+            self.awardButton:ClearAllPoints()
+            self.awardButton:SetPoint("TOPLEFT", self.reasonBox, "BOTTOMLEFT", 0, -20)
+            self.awardButton:SetWidth(fullWidth)
+            self.awardButton:Show()
+
+            self.deductButton:Hide()
+
+        elseif eventKey == "ITEM" or eventKey == "PENALTY" then
+            -- Sólo Deduct: ancho completo, anclado bajo Reason
+            self.deductButton:ClearAllPoints()
+            self.deductButton:SetPoint("TOPLEFT", self.reasonBox, "BOTTOMLEFT", 0, -20)
+            self.deductButton:SetWidth(fullWidth)
+            self.deductButton:Show()
+
+            self.awardButton:Hide()
+
+        else
+            -- Cualquier otro tipo desconocido: mostrar ambos en el layout
+            -- original (dos botones de ~133 de ancho con separación).
+            self.awardButton:ClearAllPoints()
+            self.awardButton:SetPoint("TOPLEFT", self.reasonBox, "BOTTOMLEFT", 0, -20)
+            self.awardButton:SetWidth(133)
+
+            self.deductButton:ClearAllPoints()
+            self.deductButton:SetPoint("LEFT", self.awardButton, "RIGHT", 10, 0)
+            self.deductButton:SetWidth(133)
+
+            self.awardButton:Show()
+            self.deductButton:Show()
+        end
     end
 
     -- Helper para habilitar/deshabilitar campos visualmente

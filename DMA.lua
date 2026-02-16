@@ -79,14 +79,18 @@ SlashCmdList["DMA"] = function(msg)
                 end
             end
         elseif command == "resetdata" then
-            if DMA.Data and DMA.Data.Cache then
-                DMA.Data.Cache:Clear()
-                DMA.Data.Cache:CreateTestData()
-                DMA.Data.Cache:Rebuild()
-                if DMA.UI and DMA.UI.MainFrame then
-                    DMA.UI.MainFrame:RefreshPlayerList()
-                end
-                if Logger then Logger:Info("Test data reset") else DEFAULT_CHAT_FRAME:AddMessage("DMA: Test data reset") end
+            -- Limpia todos los datos de DKP de la hermandad actual
+            -- (eventos, historial y cache), sin crear datos de prueba.
+            if DMA.Data and DMA.Data.Database and DMA.Data.Database.ClearCurrentGuildData then
+                DMA.Data.Database:ClearCurrentGuildData()
+            end
+            if DMA.UI and DMA.UI.MainFrame then
+                DMA.UI.MainFrame:RefreshPlayerList()
+            end
+            if Logger then
+                Logger:Info("DKP data cleared for current guild")
+            else
+                DEFAULT_CHAT_FRAME:AddMessage("DMA: Datos de DKP limpiados para la hermandad actual")
             end
         elseif command == "loadguild" or command == "guild" then
             if DMA.Data and DMA.Data.Cache then

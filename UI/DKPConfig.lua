@@ -196,6 +196,9 @@ function DKPConfig:LoadFromDB()
     -- Configuración por hermandad/personaje
     db.guilds = db.guilds or {}
     local guildKey = DMA.Data.Database:GetCurrentGuildKey()
+    if not guildKey then
+        return
+    end
     db.guilds[guildKey] = db.guilds[guildKey] or {}
 
     local guildData = db.guilds[guildKey]
@@ -239,6 +242,9 @@ function DKPConfig:SaveToDB()
     -- Configuración por hermandad/personaje
     db.guilds = db.guilds or {}
     local guildKey = DMA.Data.Database:GetCurrentGuildKey()
+    if not guildKey then
+        return
+    end
     db.guilds[guildKey] = db.guilds[guildKey] or {}
 
     local guildData = db.guilds[guildKey]
