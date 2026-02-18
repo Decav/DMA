@@ -1223,7 +1223,12 @@ end
 -- Select all players
 function MainFrame:SelectAllPlayers()
     for _, entry in ipairs(self.playerEntries) do
-        entry.checkbox:SetChecked(true)
+        if entry:IsShown() then
+            entry.checkbox:SetChecked(true)
+        else
+            -- Aseguramos que los jugadores fuera de la lista visible no queden marcados
+            entry.checkbox:SetChecked(false)
+        end
     end
 end
 
@@ -1250,9 +1255,10 @@ function MainFrame:SelectRaidPlayers()
     end
 
     for _, entry in ipairs(self.playerEntries) do
-        if raidNames[entry.checkbox.playerName] then
+        if entry:IsShown() and raidNames[entry.checkbox.playerName] then
             entry.checkbox:SetChecked(true)
         else
+            -- No marcar jugadores que no estén en la raid o no estén en la lista visible
             entry.checkbox:SetChecked(false)
         end
     end
@@ -1380,10 +1386,10 @@ function MainFrame:AdjustDKP(valueStr, reason, isAward)
         return penalties[pKey]
     end
 
-    -- Construir lista de jugadores seleccionados (se reutiliza en todos los casos)
+    -- Construir lista de jugadores seleccionados (sólo los que están en la lista visible)
     local selectedPlayers = {}
     for _, entry in ipairs(self.playerEntries) do
-        if entry.checkbox:GetChecked() then
+        if entry:IsShown() and entry.checkbox:GetChecked() then
             table.insert(selectedPlayers, entry.checkbox.playerName)
         end
     end
